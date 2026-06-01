@@ -1,20 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const SlideSchema = z.object({
-  kicker: z.string().describe("Rótulo curto em CAIXA ALTA, 2-4 palavras"),
-  title: z.string().describe("Título impactante, pode ter quebras de linha com \\n, 4-14 palavras"),
-  subtitle: z.string().describe("Frase de apoio em linguagem natural, 0-25 palavras. Pode ser vazia."),
-  buttonText: z.string().describe("Texto do botão CTA. Vazio se não houver CTA neste slide."),
-  buttonCaption: z.string().describe("Legenda do botão. Vazio se não houver botão."),
+  kicker: z.string(),
+  title: z.string(),
+  subtitle: z.string().default(""),
+  buttonText: z.string().default(""),
+  buttonCaption: z.string().default(""),
   align: z.enum(["top", "center", "bottom"]),
 });
 
 const CarouselSchema = z.object({
   slides: z.array(SlideSchema).length(8),
 });
+
+export type GeneratedSlide = z.infer<typeof SlideSchema>;
 
 const InputSchema = z.object({
   insight: z.string().min(10).max(20000),
@@ -27,6 +29,15 @@ const InputSchema = z.object({
     author: z.string(),
   }),
 });
+
+function extractJson(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fenced ? fenced[1] : text;
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
+  return JSON.parse(raw.slice(start, end + 1));
+}
 
 export const generateCarousel = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
@@ -41,28 +52,42 @@ export const generateCarousel = createServerFn({ method: "POST" })
 
 REGRAS DE OURO (filtro anti-cara-de-IA):
 - Linguagem natural e humana. Sem clichês motivacionais.
-- Sem "imagine se", "descubra agora", "transforme sua vida", "o segredo que ninguém te conta".
-- Sem emojis em excesso. Máximo 1 emoji em todo o carrossel, e só se fizer real diferença.
-- Sem reticências dramáticas. Sem caps lock no corpo.
+- Nada de: "imagine se", "descubra agora", "transforme sua vida", "o segredo que ninguém te conta", "você sabia que".
+- Sem emojis em excesso. No máximo 1 emoji em todo o carrossel, e só se fizer real diferença.
+- Sem reticências dramáticas. Sem CAPS LOCK no corpo.
 - Frases curtas, ritmo de leitura humano. Variação estrutural entre slides.
-- Português brasileiro, tom condizente com o briefing.
+- Português brasileiro, tom condizente com o briefing da marca.
 
-ESTRUTURA OBRIGATÓRIA (8 slides):
-1. CAPA — gancho de retenção máxima. Provoca curiosidade ou contradiz crença comum. Sem CTA.
+ESTRUTURA OBRIGATÓRIA (8 slides, nesta ordem):
+1. CAPA — gancho de retenção máxima. Provoca curiosidade ou contradiz crença comum. Sem botão.
 2. CONTEXTO/PROBLEMA — nomeia a dor real do público.
 3. VIRADA — quebra a forma como o leitor enxerga o tema.
-4. EXPLICAÇÃO — desenvolve o argumento central, dá clareza.
+4. EXPLICAÇÃO — desenvolve o argumento central com clareza.
 5. PROVA/EXEMPLO — aterriza com exemplo concreto, dado ou caso.
 6. APROFUNDAMENTO — adiciona camada que diferencia de conteúdo raso.
 7. SÍNTESE — fecha a ideia, gera o "click" mental.
-8. CTA — chamada coerente com o objetivo. Aqui usa buttonText + buttonCaption.
+8. CTA — chamada coerente com o objetivo. Único slide com buttonText e buttonCaption.
 
 ALINHAMENTO:
-- Capa (1): "center".
-- CTA (8): "bottom" com botão.
-- Demais: variar entre "bottom" e "center" conforme peso do texto.
+- Capa (slide 1): "center".
+- CTA (slide 8): "bottom".
+- Demais: alternar entre "bottom" e "center" conforme o peso do texto.
 
-CADA TÍTULO deve caber em até 4 linhas curtas. Use \\n para quebras intencionais. Nunca corte palavras.`;
+LIMITES:
+- kicker: 2 a 4 palavras em CAIXA ALTA.
+- title: 4 a 14 palavras. Use \\n para quebras intencionais. Máximo 4 linhas curtas.
+- subtitle: 0 a 25 palavras.
+- Nos slides 1 a 7: buttonText="" e buttonCaption="".
+- No slide 8: buttonText curto (3-7 palavras) e buttonCaption de 4-7 palavras.
+
+RETORNE APENAS JSON VÁLIDO no formato:
+{
+  "slides": [
+    {"kicker":"...","title":"...","subtitle":"...","buttonText":"","buttonCaption":"","align":"center"},
+    ... 8 itens no total
+  ]
+}
+Nada de texto fora do JSON.`;
 
     const userPrompt = `BRIEFING DA MARCA:
 - Nicho: ${data.brand.niche || "não definido"}
@@ -71,21 +96,19 @@ CADA TÍTULO deve caber em até 4 linhas curtas. Use \\n para quebras intenciona
 - Objetivo: ${data.brand.goal}
 - Autor: ${data.brand.author} (${data.brand.handle})
 
-INSIGHT BRUTO DO USUÁRIO:
+INSIGHT BRUTO:
 """
 ${data.insight}
 """
 
-Extraia o ângulo mais forte deste insight e construa o carrossel de 8 slides seguindo a estrutura.
-No slide 8 (CTA), escreva um botão curto e uma legenda de 4-7 palavras alinhada ao objetivo "${data.brand.goal}".
-Nos demais slides, buttonText e buttonCaption devem ser strings vazias.`;
+Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguindo a estrutura. Retorne apenas o JSON.`;
 
-    const { experimental_output } = await generateText({
+    const { text } = await generateText({
       model,
       system,
       prompt: userPrompt,
-      experimental_output: Output.object({ schema: CarouselSchema }),
     });
 
-    return experimental_output;
+    const parsed = CarouselSchema.parse(extractJson(text));
+    return parsed;
   });

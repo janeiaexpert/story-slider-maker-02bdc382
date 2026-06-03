@@ -479,6 +479,23 @@ function Index() {
                 </div>
               </Field>
 
+              <Field label="Gradiente (escurece esse lado)">
+                <div className="grid grid-cols-4 gap-2">
+                  {(["top", "bottom", "left", "right"] as const).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => update({ gradient: g })}
+                      className={`rounded-md py-2 text-xs font-semibold capitalize ${
+                        s.gradient === g ? "bg-white text-black" : "bg-white/5 text-white/70"
+                      }`}
+                    >
+                      {g === "top" ? "↑" : g === "bottom" ? "↓" : g === "left" ? "←" : "→"} {g}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+
               <Field label="Foto de fundo">
                 <label className="block cursor-pointer rounded-md bg-white/5 px-3 py-2 text-center text-xs text-white/70 hover:bg-white/10">
                   {s.image ? "Trocar foto" : "Enviar foto"}

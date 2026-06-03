@@ -83,7 +83,7 @@ function Index() {
       try {
         const data = JSON.parse(raw);
         if (Array.isArray(data) && data.length === 8) {
-          setSlides(data.map((d: Slide) => ({ ...d, gradient: d.gradient ?? "bottom" })));
+          setSlides(data.map((d: Slide) => ({ ...d, gradient: d.gradient ?? "bottom", imagePos: d.imagePos ?? "center" })));
           setView("editor");
         }
       } catch {}

@@ -49,6 +49,7 @@ function blankSlides(brand: Brand): Slide[] {
     image: null,
     align: "bottom",
     gradient: "bottom",
+    imagePos: "center",
   }));
 }
 

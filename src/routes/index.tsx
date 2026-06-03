@@ -168,9 +168,9 @@ function Index() {
           },
         },
       });
-      const next: Slide[] = result.slides.map((s) => ({
+      const next: Slide[] = result.slides.map((s, i) => ({
         kicker: s.kicker,
-        title: s.title.replace(/\\n/g, "\n"),
+        title: sanitizeTitle(s.title),
         subtitle: s.subtitle,
         buttonText: s.buttonText,
         buttonCaption: s.buttonCaption,
@@ -179,6 +179,8 @@ function Index() {
         image: null,
         align: s.align,
         gradient: "bottom",
+        gradientIntensity: 70,
+        buttonPosition: i === 7 ? "bottom" : "inline",
         imagePos: "center",
       }));
       setSlides(next);

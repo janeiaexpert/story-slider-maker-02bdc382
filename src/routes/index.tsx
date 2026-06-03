@@ -256,24 +256,24 @@ function Index() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowBrand(true)}
-              className="rounded-md bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
             >
-              ⚙ Marca
+              <Settings2 className="h-3.5 w-3.5" /> Marca
             </button>
             {view === "editor" && (
               <>
                 <button
                   onClick={newCarousel}
-                  className="rounded-md bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
                 >
-                  + Novo
+                  <Plus className="h-3.5 w-3.5" /> Novo
                 </button>
                 <button
                   onClick={exportAll}
-                  className="rounded-md px-4 py-2 text-sm font-semibold"
+                  className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold"
                   style={{ background: GOLD, color: "#111" }}
                 >
-                  ⬇ Exportar todos
+                  <Download className="h-4 w-4" /> Exportar todos
                 </button>
               </>
             )}

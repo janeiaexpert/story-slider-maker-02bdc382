@@ -766,6 +766,15 @@ function Index() {
           }}
         />
       )}
+      {showLibrary && (
+        <LibraryDialog
+          items={library}
+          currentId={currentId}
+          onLoad={handleLoadCarousel}
+          onDelete={handleDeleteCarousel}
+          onClose={() => setShowLibrary(false)}
+        />
+      )}
     </div>
   );
 }

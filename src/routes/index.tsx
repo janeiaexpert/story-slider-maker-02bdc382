@@ -109,6 +109,11 @@ function Index() {
   const [slides, setSlides] = useState<Slide[]>(blankSlides(defaultBrand));
   const [active, setActive] = useState(0);
   const [saved, setSaved] = useState<number | null>(null);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [currentName, setCurrentName] = useState<string>("");
+  const [library, setLibrary] = useState<SavedCarousel[]>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
 
   const generateFn = useServerFn(generateCarousel);

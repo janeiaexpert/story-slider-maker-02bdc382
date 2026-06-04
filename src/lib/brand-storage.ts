@@ -16,9 +16,16 @@ export const defaultBrand: Brand = {
   goal: "autoridade",
   handle: "@seuhandle",
   author: "Seu Nome",
-  primaryColor: "#c2a25b",
+  primaryColor: "#8b5a2b",
   bgColor: "#0a0a0a",
 };
+
+export const BRAND_PALETTES: { name: string; primary: string; bg: string }[] = [
+  { name: "Marrom & Preto", primary: "#8b5a2b", bg: "#0a0a0a" },
+  { name: "Marrom & Branco", primary: "#6b3a1d", bg: "#f5f1ea" },
+  { name: "Bege & Preto", primary: "#c9a27a", bg: "#111111" },
+  { name: "Preto & Branco", primary: "#ffffff", bg: "#0a0a0a" },
+];
 
 const KEY = "carousel-brand-v1";
 

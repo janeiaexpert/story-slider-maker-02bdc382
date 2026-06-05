@@ -23,6 +23,8 @@ import { generateCarousel } from "@/lib/carousel.functions";
 import {
   type Brand,
   BRAND_PALETTES,
+  DESIGN_STYLES,
+  type DesignStyle,
   defaultBrand,
   loadBrand,
   saveBrand,

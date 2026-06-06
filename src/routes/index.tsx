@@ -929,6 +929,17 @@ function Index() {
             setShowStyles(false);
           }}
         />
+      {showShare && (
+        <ShareDialog
+          spaceId={spaceId}
+          onClose={() => setShowShare(false)}
+          onJoin={async (newId) => {
+            setSpaceId(newId);
+            setSpaceIdState(newId);
+            await refreshLibrary();
+            setShowShare(false);
+          }}
+        />
       )}
     </div>
   );

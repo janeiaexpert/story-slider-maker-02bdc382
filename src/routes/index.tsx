@@ -57,7 +57,27 @@ type Slide = {
   gradientIntensity: number;
   buttonPosition: "inline" | "bottom";
   imagePos: "top" | "center" | "bottom";
+  titleColor?: string;
+  subtitleColor?: string;
+  kickerColor?: string;
+  highlightColor?: string;
 };
+
+// Renderiza texto com **palavra** destacada em cor de marcador.
+function renderRich(text: string, highlight: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((p, i) => {
+    const m = p.match(/^\*\*([^*]+)\*\*$/);
+    if (m) {
+      return (
+        <span key={i} style={{ color: highlight, fontWeight: 700 }}>
+          {m[1]}
+        </span>
+      );
+    }
+    return <span key={i}>{p}</span>;
+  });
+}
 
 const STORAGE_KEY = "carousel-creator-v1";
 

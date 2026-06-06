@@ -374,8 +374,23 @@ function Index() {
           </div>
           <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
             <button
+              onClick={() => setCompact((c) => !c)}
+              title={compact ? "Modo normal" : "Modo compacto"}
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+            >
+              {compact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              onClick={() => setShowShare(true)}
+              title="Sincronizar dispositivos"
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sync</span>
+            </button>
+            <button
               onClick={() => {
-                setLibrary(loadLibrary());
+                refreshLibrary();
                 setShowLibrary(true);
               }}
               className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"

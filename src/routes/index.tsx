@@ -36,7 +36,8 @@ import {
   newId,
   upsertCarousel,
 } from "@/lib/carousel-library";
-import { Save, FolderOpen, Trash2 } from "lucide-react";
+import { getSpaceId, shareUrl, qrUrl, setSpaceId } from "@/lib/space-id";
+import { Save, FolderOpen, Trash2, Share2, Minimize2, Maximize2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,

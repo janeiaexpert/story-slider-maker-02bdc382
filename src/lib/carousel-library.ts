@@ -50,7 +50,7 @@ export async function upsertCarousel(item: SavedCarousel): Promise<SavedCarousel
       id: item.id,
       space_id: space,
       name: item.name,
-      slides: item.slides,
+      slides: item.slides as never,
     },
     { onConflict: "space_id,id" },
   );

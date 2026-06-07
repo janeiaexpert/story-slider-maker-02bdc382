@@ -19,7 +19,7 @@ import {
   Palette,
   FileDown,
 } from "lucide-react";
-import { generateCarousel } from "@/lib/carousel.functions";
+import { generateCarousel, generateCaption } from "@/lib/carousel.functions";
 import {
   type Brand,
   BRAND_PALETTES,
@@ -36,8 +36,7 @@ import {
   newId,
   upsertCarousel,
 } from "@/lib/carousel-library";
-import { getSpaceId, shareUrl, qrUrl, setSpaceId } from "@/lib/space-id";
-import { Save, FolderOpen, Trash2, Share2, Minimize2, Maximize2 } from "lucide-react";
+import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,

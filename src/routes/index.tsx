@@ -974,16 +974,11 @@ function Index() {
           }}
         />
       )}
-      {showShare && (
-        <ShareDialog
-          spaceId={spaceId}
-          onClose={() => setShowShare(false)}
-          onJoin={async (newId) => {
-            setSpaceId(newId);
-            setSpaceIdState(newId);
-            await refreshLibrary();
-            setShowShare(false);
-          }}
+      {showCaption && (
+        <CaptionDialog
+          slides={slides}
+          brand={brand}
+          onClose={() => setShowCaption(false)}
         />
       )}
     </div>

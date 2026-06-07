@@ -112,3 +112,110 @@ Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguin
     const parsed = CarouselSchema.parse(extractJson(text));
     return parsed;
   });
+
+const CaptionInputSchema = z.object({
+  slides: z
+    .array(
+      z.object({
+        kicker: z.string().default(""),
+        title: z.string().default(""),
+        subtitle: z.string().default(""),
+      }),
+    )
+    .min(1)
+    .max(20),
+  brand: z.object({
+    niche: z.string().default(""),
+    audience: z.string().default(""),
+    tone: z.string().default(""),
+    goal: z.string().default(""),
+    handle: z.string().default(""),
+    author: z.string().default(""),
+  }),
+  framework: z.enum(["AIDA", "PAS"]).default("AIDA"),
+});
+
+export const generateCaption = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => CaptionInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+
+    const gateway = createLovableAiGatewayProvider(key);
+    const model = gateway("google/gemini-3-flash-preview");
+
+    const slidesDump = data.slides
+      .map(
+        (s, i) =>
+          `Slide ${i + 1}\n  kicker: ${s.kicker}\n  title: ${s.title.replace(/\n/g, " ")}\n  subtitle: ${s.subtitle}`,
+      )
+      .join("\n\n");
+
+    const fw = data.framework;
+    const fwGuide =
+      fw === "AIDA"
+        ? `Use o framework AIDA:
+- Atenção: 1ª linha que para o scroll (gancho do slide 1).
+- Interesse: 2-3 linhas contextualizando a dor/desejo do público.
+- Desejo: o que muda quando ele entende o que está no carrossel.
+- Ação: convite claro (salvar, comentar, compartilhar, clicar no link da bio etc.) coerente com o objetivo da marca.`
+        : `Use o framework PAS:
+- Problema: nomeie a dor real do público em 1-2 linhas.
+- Agitação: aprofunde o custo de continuar nessa dor.
+- Solução: aponte o que o carrossel entrega + CTA coerente com o objetivo.`;
+
+    const system = `Você é um copywriter de Instagram. Escreve legendas em português brasileiro, naturais, sem cara de IA.
+
+REGRAS:
+- Use APENAS o que está nos slides. Não invente dados, estatísticas, nomes, casos ou promessas que não estejam ali.
+- Sem clichês ("descubra agora", "transforme sua vida", "o segredo que ninguém te conta", "imagine se", "você sabia que").
+- Sem emojis em excesso. No máximo 2 em toda a legenda, e só se agregarem.
+- Frases curtas, ritmo humano, parágrafos de 1 a 3 linhas separados por linha em branco.
+- Não use hashtags no corpo da legenda — elas vão num bloco final.
+- Limite total: ~1800 caracteres.
+
+${fwGuide}
+
+FORMATO DE SAÍDA — APENAS JSON VÁLIDO, nada fora:
+{
+  "caption": "texto da legenda com quebras de linha reais",
+  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5"]
+}
+
+REGRAS DAS HASHTAGS:
+- Exatamente 5 hashtags, relevantes ao tema dos slides e ao nicho da marca.
+- Sem espaços, sem acentos, em minúsculo. Cada uma começa com #.
+- Nada genérico demais ("#instagram", "#follow"). Específicas ao conteúdo.`;
+
+    const userPrompt = `BRIEFING DA MARCA:
+- Nicho: ${data.brand.niche || "não definido"}
+- Público: ${data.brand.audience || "não definido"}
+- Tom: ${data.brand.tone || "não definido"}
+- Objetivo: ${data.brand.goal || "não definido"}
+- Autor: ${data.brand.author} (${data.brand.handle})
+
+CARROSSEL (use apenas isto como fonte):
+${slidesDump}
+
+Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
+
+    const { text } = await generateText({ model, system, prompt: userPrompt });
+
+    const parsed = z
+      .object({
+        caption: z.string().min(1),
+        hashtags: z.array(z.string()).min(3).max(8),
+      })
+      .parse(extractJson(text));
+
+    // Normaliza hashtags: garante # no início, sem espaço, e exatamente 5
+    const tags = parsed.hashtags
+      .map((t) => {
+        const clean = t.trim().replace(/\s+/g, "").replace(/^#+/, "");
+        return clean ? `#${clean}` : "";
+      })
+      .filter(Boolean)
+      .slice(0, 5);
+
+    return { caption: parsed.caption.trim(), hashtags: tags };
+  });

@@ -19,7 +19,7 @@ import {
   Palette,
   FileDown,
 } from "lucide-react";
-import { generateCarousel } from "@/lib/carousel.functions";
+import { generateCarousel, generateCaption } from "@/lib/carousel.functions";
 import {
   type Brand,
   BRAND_PALETTES,
@@ -36,8 +36,7 @@ import {
   newId,
   upsertCarousel,
 } from "@/lib/carousel-library";
-import { getSpaceId, shareUrl, qrUrl, setSpaceId } from "@/lib/space-id";
-import { Save, FolderOpen, Trash2, Share2, Minimize2, Maximize2 } from "lucide-react";
+import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -143,8 +142,7 @@ function Index() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [compact, setCompact] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [spaceId, setSpaceIdState] = useState<string>("");
+  const [showCaption, setShowCaption] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
 
   const generateFn = useServerFn(generateCarousel);
@@ -177,8 +175,6 @@ function Index() {
       } catch {}
     }
     setCompact(localStorage.getItem("carousel-compact-v1") === "1");
-    const sid = getSpaceId();
-    setSpaceIdState(sid);
     loadLibrary().then(setLibrary);
   }, []);
 
@@ -356,14 +352,37 @@ function Index() {
     setTimeout(() => setSaved(null), 1500);
   };
 
+  const downloadPng = (dataUrl: string, filename: string) => {
+    const blob = dataUrlToBlob(dataUrl);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const exportAll = async () => {
-    for (let i = 0; i < slides.length; i++) {
-      setActive(i);
-      await new Promise((r) => setTimeout(r, 200));
-      if (!slideRef.current) continue;
-      const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
-      await savePng(dataUrl, `slide-${i + 1}.png`);
-      await new Promise((r) => setTimeout(r, 250));
+    setExporting(true);
+    try {
+      const prevActive = active;
+      for (let i = 0; i < slides.length; i++) {
+        setActive(i);
+        // Aguarda render: 2 frames + tick para layout/imagens estabilizarem (inclui o slide 1)
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        await new Promise((r) => setTimeout(r, 300));
+        if (!slideRef.current) continue;
+        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+        downloadPng(dataUrl, `slide-${i + 1}.png`);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+      setActive(prevActive);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -438,14 +457,16 @@ function Index() {
             >
               {compact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
             </button>
-            <button
-              onClick={() => setShowShare(true)}
-              title="Sincronizar dispositivos"
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Sync</span>
-            </button>
+            {view === "editor" && (
+              <button
+                onClick={() => setShowCaption(true)}
+                title="Gerar legenda para Instagram"
+                className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+              >
+                <MessageSquareText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Legenda</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 refreshLibrary();
@@ -976,16 +997,11 @@ function Index() {
           }}
         />
       )}
-      {showShare && (
-        <ShareDialog
-          spaceId={spaceId}
-          onClose={() => setShowShare(false)}
-          onJoin={async (newId) => {
-            setSpaceId(newId);
-            setSpaceIdState(newId);
-            await refreshLibrary();
-            setShowShare(false);
-          }}
+      {showCaption && (
+        <CaptionDialog
+          slides={slides}
+          brand={brand}
+          onClose={() => setShowCaption(false)}
         />
       )}
     </div>
@@ -1304,43 +1320,74 @@ function StylesDialog({
   );
 }
 
-function ShareDialog({
-  spaceId,
+function CaptionDialog({
+  slides,
+  brand,
   onClose,
-  onJoin,
 }: {
-  spaceId: string;
+  slides: Slide[];
+  brand: Brand;
   onClose: () => void;
-  onJoin: (id: string) => void;
 }) {
-  const [joinId, setJoinId] = useState("");
+  const captionFn = useServerFn(generateCaption);
+  const [framework, setFramework] = useState<"AIDA" | "PAS">("AIDA");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [caption, setCaption] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
-  const url = shareUrl(spaceId);
+
+  const full = caption + (tags.length ? `\n\n${tags.join(" ")}` : "");
+
+  const run = async (fw: "AIDA" | "PAS") => {
+    setLoading(true);
+    setErr(null);
+    setCaption("");
+    setTags([]);
+    try {
+      const data = await captionFn({
+        data: {
+          framework: fw,
+          brand: {
+            niche: brand.niche,
+            audience: brand.audience,
+            tone: brand.tone,
+            goal: brand.goal,
+            handle: brand.handle,
+            author: brand.author,
+          },
+          slides: slides
+            .filter((s) => (s.title || s.subtitle || s.kicker || "").trim().length > 0)
+            .map((s) => ({
+              kicker: s.kicker || "",
+              title: (s.title || "").replace(/\*\*/g, ""),
+              subtitle: (s.subtitle || "").replace(/\*\*/g, ""),
+            })),
+        },
+      });
+      setCaption(data.caption);
+      setTags(data.hashtags);
+    } catch (e) {
+      console.error(e);
+      setErr("Não consegui gerar a legenda. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(full);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {}
   };
 
-  const shareNative = async () => {
-    const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void> };
-    if (nav.share) {
-      try {
-        await nav.share({ title: "Minha biblioteca de carrosséis", url });
-      } catch {}
-    } else {
-      copy();
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 p-4 overflow-y-auto">
-      <div className="w-full max-w-md rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
+      <div className="w-full max-w-lg rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Sincronizar dispositivos</h2>
+          <h2 className="text-lg font-bold">Legenda para Instagram</h2>
           <button
             onClick={onClose}
             className="rounded-md bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
@@ -1349,63 +1396,75 @@ function ShareDialog({
           </button>
         </div>
 
-        <p className="mb-4 text-xs text-white/60">
-          Abra este link (ou escaneie o QR) em outro dispositivo para usar a mesma biblioteca.
-          Sem login — guarde o link em local seguro: quem tiver acesso vê seus carrosséis.
+        <p className="mb-3 text-xs text-white/60">
+          Gera a legenda usando só o que está nos slides — sem inventar dados.
+          Inclui 5 hashtags relevantes ao tema.
         </p>
 
-        <div className="mb-4 flex justify-center rounded-lg bg-white p-3">
-          <img src={qrUrl(url, 220)} alt="QR do espaço" width={220} height={220} />
+        <div className="mb-4 flex gap-2">
+          {(["AIDA", "PAS"] as const).map((fw) => (
+            <button
+              key={fw}
+              onClick={() => {
+                setFramework(fw);
+                run(fw);
+              }}
+              disabled={loading}
+              className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold disabled:opacity-50 ${
+                framework === fw
+                  ? "bg-white text-black"
+                  : "bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              {fw}
+            </button>
+          ))}
         </div>
 
-        <div className="mb-3">
-          <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">Link do espaço</div>
-          <div className="flex gap-2">
-            <input
+        {loading && (
+          <div className="rounded-md bg-white/5 p-4 text-xs text-white/70">Gerando…</div>
+        )}
+        {err && <div className="rounded-md bg-red-500/10 p-3 text-xs text-red-300">{err}</div>}
+
+        {!loading && caption && (
+          <>
+            <textarea
               readOnly
-              value={url}
+              value={full}
+              rows={14}
               onFocus={(e) => e.currentTarget.select()}
-              className="flex-1 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none"
+              className="mb-3 w-full resize-y rounded-md border border-white/10 bg-black/40 p-3 text-sm text-white outline-none"
             />
-            <button
-              onClick={copy}
-              className="rounded-md bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/20"
-            >
-              {copied ? "Copiado!" : "Copiar"}
-            </button>
-          </div>
-        </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] text-white/40">
+                {full.length} caracteres · {tags.length} hashtags
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => run(framework)}
+                  className="rounded-md bg-white/5 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+                >
+                  Gerar de novo
+                </button>
+                <button
+                  onClick={copy}
+                  className="rounded-md bg-white px-3 py-2 text-xs font-bold text-black"
+                >
+                  {copied ? "Copiado!" : "Copiar tudo"}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
-        <button
-          onClick={shareNative}
-          className="mb-5 w-full rounded-md bg-white/5 py-2 text-xs font-semibold hover:bg-white/10"
-        >
-          Compartilhar…
-        </button>
-
-        <div className="mb-2 border-t border-white/10 pt-4">
-          <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
-            Entrar em outro espaço
-          </div>
-          <p className="mb-2 text-[11px] text-white/40">
-            Cole aqui o código de um espaço existente (a parte após <code>?space=</code> do link).
-          </p>
-          <div className="flex gap-2">
-            <input
-              value={joinId}
-              onChange={(e) => setJoinId(e.target.value.trim())}
-              placeholder="código do espaço"
-              className="flex-1 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none focus:border-white/30"
-            />
-            <button
-              disabled={joinId.length < 8}
-              onClick={() => onJoin(joinId)}
-              className="rounded-md bg-white px-3 py-2 text-xs font-bold text-black disabled:opacity-40"
-            >
-              Entrar
-            </button>
-          </div>
-        </div>
+        {!loading && !caption && !err && (
+          <button
+            onClick={() => run(framework)}
+            className="w-full rounded-md bg-white px-3 py-2 text-sm font-bold text-black"
+          >
+            Gerar legenda ({framework})
+          </button>
+        )}
       </div>
     </div>
   );

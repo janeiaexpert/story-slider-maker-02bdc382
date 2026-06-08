@@ -89,9 +89,8 @@ const DIR_MAP: Record<Slide["gradient"], string> = {
 
 function gradientFor(dir: Slide["gradient"], intensity: number) {
   const a = Math.max(0, Math.min(1, intensity / 100));
-  return `linear-gradient(${DIR_MAP[dir]}, rgba(0,0,0,${(a * 0.3).toFixed(
-    2,
-  )}) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,${a.toFixed(2)}) 100%)`;
+  // Gradiente unidirecional: transparente do lado oposto, preto forte na direção escolhida.
+  return `linear-gradient(${DIR_MAP[dir]}, rgba(0,0,0,0) 0%, rgba(0,0,0,${(a * 0.45).toFixed(2)}) 55%, rgba(0,0,0,${a.toFixed(2)}) 100%)`;
 }
 
 function sanitizeTitle(t: string) {
@@ -638,7 +637,12 @@ function Index() {
                         </div>
                         <h2
                           className="mt-3 whitespace-pre-line text-[28px] leading-[1.1] font-bold"
-                          style={{ fontFamily: brand.fontFamily, color: s.titleColor ?? "#ffffff" }}
+                          style={{
+                            fontFamily: brand.fontFamily,
+                            color: s.titleColor ?? "#ffffff",
+                            letterSpacing: "-0.01em",
+                            wordSpacing: "normal",
+                          }}
                         >
                           {renderRich(s.title, s.highlightColor ?? GOLD)}
                         </h2>

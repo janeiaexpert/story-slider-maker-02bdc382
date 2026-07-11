@@ -125,7 +125,6 @@ function Index() {
   const [brand, setBrand] = useState<Brand>(defaultBrand);
   const [brandReady, setBrandReady] = useState(false);
   const [showBrand, setShowBrand] = useState(false);
-  const [showStyles, setShowStyles] = useState(false);
   const [view, setView] = useState<"insight" | "editor">("insight");
   const [insight, setInsight] = useState("");
   const [loading, setLoading] = useState(false);

@@ -627,7 +627,7 @@ function Index() {
                         style={{ background: gradientFor(s.gradient, s.gradientIntensity) }}
                       />
                     )}
-                    <div className={`relative z-10 flex h-full w-full flex-col px-7 pb-20 ${alignClass}`}>
+                    <div className={`relative z-10 flex h-full w-full flex-col px-7 ${s.buttonText && s.buttonPosition === "bottom" ? "pb-44" : "pb-20"} ${alignClass}`}>
                       <div>
                         <div
                           className="text-[11px] font-bold tracking-[0.28em]"

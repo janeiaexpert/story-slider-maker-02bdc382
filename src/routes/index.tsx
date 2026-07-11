@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Circle,
+  Palette,
   FileDown,
 } from "lucide-react";
 import { generateCarousel, generateCaption } from "@/lib/carousel.functions";
@@ -124,6 +125,7 @@ function Index() {
   const [brand, setBrand] = useState<Brand>(defaultBrand);
   const [brandReady, setBrandReady] = useState(false);
   const [showBrand, setShowBrand] = useState(false);
+  const [showStyles, setShowStyles] = useState(false);
   const [view, setView] = useState<"insight" | "editor">("insight");
   const [insight, setInsight] = useState("");
   const [loading, setLoading] = useState(false);
@@ -478,6 +480,13 @@ function Index() {
                   {library.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setShowStyles(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+            >
+              <Palette className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Estilos</span>
             </button>
             <button
               onClick={() => setShowBrand(true)}
@@ -975,6 +984,23 @@ function Index() {
           onClose={() => setShowLibrary(false)}
         />
       )}
+      {showStyles && (
+        <StylesDialog
+          current={brand}
+          onClose={() => setShowStyles(false)}
+          onPick={(style) => {
+            const next: Brand = {
+              ...brand,
+              fontFamily: style.fontFamily,
+              primaryColor: style.primaryColor,
+              bgColor: style.bgColor,
+            };
+            saveBrand(next);
+            setBrand(next);
+            setShowStyles(false);
+          }}
+        />
+      )}
       {showCaption && (
         <CaptionDialog
           slides={slides}
@@ -996,200 +1022,105 @@ function BrandDialog({
   onClose: () => void;
 }) {
   const [b, setB] = useState<Brand>(initial);
-  const [tab, setTab] = useState<"marca" | "estilos">("marca");
   const set = <K extends keyof Brand>(k: K, v: Brand[K]) => setB((s) => ({ ...s, [k]: v }));
-
-  const applyStyle = (style: DesignStyle) => {
-    setB((s) => ({
-      ...s,
-      fontFamily: style.fontFamily,
-      primaryColor: style.primaryColor,
-      bgColor: style.bgColor,
-    }));
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Configuração da marca</h2>
-            <p className="text-xs text-white/50">
-              Ajuste a identidade, a paleta e o estilo visual dos slides.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
-          >
-            Fechar
-          </button>
-        </div>
+      <div className="w-full max-w-lg rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
+        <h2 className="mb-1 text-lg font-bold">Sua marca</h2>
+        <p className="mb-5 text-xs text-white/50">
+          A IA usa essas informações para escrever no seu tom e aplicar seu visual.
+        </p>
 
-        <div className="mb-4 flex gap-2 border-b border-white/10 pb-1">
-          <button
-            onClick={() => setTab("marca")}
-            className={`px-3 py-2 text-sm font-semibold transition ${
-              tab === "marca"
-                ? "border-b-2 text-white"
-                : "text-white/50 hover:text-white"
-            }`}
-            style={{ borderColor: tab === "marca" ? b.primaryColor : "transparent" }}
-          >
-            Sua marca
-          </button>
-          <button
-            onClick={() => setTab("estilos")}
-            className={`px-3 py-2 text-sm font-semibold transition ${
-              tab === "estilos"
-                ? "border-b-2 text-white"
-                : "text-white/50 hover:text-white"
-            }`}
-            style={{ borderColor: tab === "estilos" ? b.primaryColor : "transparent" }}
-          >
-            Estilos de designer
-          </button>
-        </div>
-
-        {tab === "marca" ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Nicho">
-              <input
-                value={b.niche}
-                onChange={(e) => set("niche", e.target.value)}
-                placeholder="ex: IA para empresas"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="Público-alvo">
-              <input
-                value={b.audience}
-                onChange={(e) => set("audience", e.target.value)}
-                placeholder="ex: donos de PMEs"
-                className={inputCls}
-              />
-            </Field>
-            <Field label="@handle">
-              <input value={b.handle} onChange={(e) => set("handle", e.target.value)} className={inputCls} />
-            </Field>
-            <Field label="Autor">
-              <input value={b.author} onChange={(e) => set("author", e.target.value)} className={inputCls} />
-            </Field>
-            <Field label="Tom de voz">
-              <select
-                value={b.tone}
-                onChange={(e) => set("tone", e.target.value as Brand["tone"])}
-                className={inputCls}
-              >
-                <option value="autoridade">Autoridade</option>
-                <option value="proximo">Próximo</option>
-                <option value="provocador">Provocador</option>
-                <option value="didatico">Didático</option>
-              </select>
-            </Field>
-            <Field label="Objetivo">
-              <select
-                value={b.goal}
-                onChange={(e) => set("goal", e.target.value as Brand["goal"])}
-                className={inputCls}
-              >
-                <option value="autoridade">Autoridade</option>
-                <option value="conversao">Conversão</option>
-                <option value="educacao">Educação</option>
-                <option value="viralizacao">Viralização</option>
-              </select>
-            </Field>
-            <div className="col-span-2">
-              <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
-                Paleta sugerida
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {BRAND_PALETTES.map((p) => {
-                  const active = b.primaryColor === p.primary && b.bgColor === p.bg;
-                  return (
-                    <button
-                      key={p.name}
-                      onClick={() => setB((s) => ({ ...s, primaryColor: p.primary, bgColor: p.bg }))}
-                      className={`flex flex-col items-stretch overflow-hidden rounded-md border text-[10px] font-semibold transition ${
-                        active ? "border-white" : "border-white/10 hover:border-white/30"
-                      }`}
-                    >
-                      <div className="flex h-8">
-                        <div className="flex-1" style={{ background: p.bg }} />
-                        <div className="flex-1" style={{ background: p.primary }} />
-                      </div>
-                      <div className="px-1 py-1 text-white/70">{p.name}</div>
-                    </button>
-                  );
-                })}
-              </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nicho">
+            <input
+              value={b.niche}
+              onChange={(e) => set("niche", e.target.value)}
+              placeholder="ex: IA para empresas"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Público-alvo">
+            <input
+              value={b.audience}
+              onChange={(e) => set("audience", e.target.value)}
+              placeholder="ex: donos de PMEs"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="@handle">
+            <input value={b.handle} onChange={(e) => set("handle", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Autor">
+            <input value={b.author} onChange={(e) => set("author", e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Tom de voz">
+            <select
+              value={b.tone}
+              onChange={(e) => set("tone", e.target.value as Brand["tone"])}
+              className={inputCls}
+            >
+              <option value="autoridade">Autoridade</option>
+              <option value="proximo">Próximo</option>
+              <option value="provocador">Provocador</option>
+              <option value="didatico">Didático</option>
+            </select>
+          </Field>
+          <Field label="Objetivo">
+            <select
+              value={b.goal}
+              onChange={(e) => set("goal", e.target.value as Brand["goal"])}
+              className={inputCls}
+            >
+              <option value="autoridade">Autoridade</option>
+              <option value="conversao">Conversão</option>
+              <option value="educacao">Educação</option>
+              <option value="viralizacao">Viralização</option>
+            </select>
+          </Field>
+          <div className="col-span-2">
+            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
+              Paleta sugerida
             </div>
-            <Field label="Cor primária">
-              <input
-                type="color"
-                value={b.primaryColor}
-                onChange={(e) => set("primaryColor", e.target.value)}
-                className="h-10 w-full rounded-md border border-white/10 bg-black/40"
-              />
-            </Field>
-            <Field label="Cor de fundo">
-              <input
-                type="color"
-                value={b.bgColor}
-                onChange={(e) => set("bgColor", e.target.value)}
-                className="h-10 w-full rounded-md border border-white/10 bg-black/40"
-              />
-            </Field>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {DESIGN_STYLES.map((style) => {
-              const active =
-                b.fontFamily === style.fontFamily &&
-                b.primaryColor === style.primaryColor &&
-                b.bgColor === style.bgColor;
-              return (
-                <button
-                  key={style.name}
-                  onClick={() => applyStyle(style)}
-                  className={`overflow-hidden rounded-xl border text-left transition ${
-                    active ? "border-white" : "border-white/10 hover:border-white/30"
-                  }`}
-                >
-                  <div
-                    className="flex h-32 items-end p-4"
-                    style={{ background: style.bgColor }}
+            <div className="grid grid-cols-4 gap-2">
+              {BRAND_PALETTES.map((p) => {
+                const active = b.primaryColor === p.primary && b.bgColor === p.bg;
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => setB((s) => ({ ...s, primaryColor: p.primary, bgColor: p.bg }))}
+                    className={`flex flex-col items-stretch overflow-hidden rounded-md border text-[10px] font-semibold transition ${
+                      active ? "border-white" : "border-white/10 hover:border-white/30"
+                    }`}
                   >
-                    <div>
-                      <div
-                        className="text-[10px] font-bold tracking-[0.28em] uppercase"
-                        style={{ color: style.primaryColor }}
-                      >
-                        kicker
-                      </div>
-                      <div
-                        className="mt-1 text-lg leading-tight font-bold"
-                        style={{
-                          fontFamily: style.fontFamily,
-                          color: style.bgColor.toLowerCase() === "#f5f1ea" ? "#111" : "#fff",
-                        }}
-                      >
-                        Título do slide
-                      </div>
+                    <div className="flex h-8">
+                      <div className="flex-1" style={{ background: p.bg }} />
+                      <div className="flex-1" style={{ background: p.primary }} />
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between bg-black/40 px-4 py-3">
-                    <div>
-                      <div className="text-sm font-semibold">{style.name}</div>
-                      <div className="text-[11px] text-white/50">{style.description}</div>
-                    </div>
-                    {active && <Check className="h-4 w-4" />}
-                  </div>
-                </button>
-              );
-            })}
+                    <div className="px-1 py-1 text-white/70">{p.name}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
+          <Field label="Cor primária">
+            <input
+              type="color"
+              value={b.primaryColor}
+              onChange={(e) => set("primaryColor", e.target.value)}
+              className="h-10 w-full rounded-md border border-white/10 bg-black/40"
+            />
+          </Field>
+          <Field label="Cor de fundo">
+            <input
+              type="color"
+              value={b.bgColor}
+              onChange={(e) => set("bgColor", e.target.value)}
+              className="h-10 w-full rounded-md border border-white/10 bg-black/40"
+            />
+          </Field>
+        </div>
 
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -1313,6 +1244,85 @@ function LibraryDialog({
   );
 }
 
+function StylesDialog({
+  current,
+  onPick,
+  onClose,
+}: {
+  current: Brand;
+  onPick: (s: DesignStyle) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 p-4 overflow-y-auto">
+      <div className="w-full max-w-2xl rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold">Estilos de design</h2>
+            <p className="text-xs text-white/50">
+              Aplica tipografia, cor primária e fundo em todo o carrossel.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
+          >
+            Fechar
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {DESIGN_STYLES.map((s) => {
+            const active =
+              current.fontFamily === s.fontFamily &&
+              current.primaryColor === s.primaryColor &&
+              current.bgColor === s.bgColor;
+            return (
+              <button
+                key={s.name}
+                onClick={() => onPick(s)}
+                className={`overflow-hidden rounded-xl border text-left transition ${
+                  active ? "border-white" : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <div
+                  className="flex h-32 items-end p-4"
+                  style={{ background: s.bgColor }}
+                >
+                  <div>
+                    <div
+                      className="text-[10px] font-bold tracking-[0.28em] uppercase"
+                      style={{ color: s.primaryColor }}
+                    >
+                      kicker
+                    </div>
+                    <div
+                      className="mt-1 text-lg leading-tight font-bold"
+                      style={{
+                        fontFamily: s.fontFamily,
+                        color: s.bgColor.toLowerCase() === "#f5f1ea" ? "#111" : "#fff",
+                      }}
+                    >
+                      Título do slide
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between bg-black/40 px-4 py-3">
+                  <div>
+                    <div className="text-sm font-semibold">{s.name}</div>
+                    <div className="text-[11px] text-white/50">{s.description}</div>
+                  </div>
+                  {active && (
+                    <Check className="h-4 w-4" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CaptionDialog({
   slides,

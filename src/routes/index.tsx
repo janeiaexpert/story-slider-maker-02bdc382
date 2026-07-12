@@ -18,6 +18,10 @@ import {
   Circle,
   Palette,
   FileDown,
+  Type,
+  Shapes,
+  Layout,
+  X,
 } from "lucide-react";
 import { generateCarousel, generateCaption } from "@/lib/carousel.functions";
 import {
@@ -25,6 +29,8 @@ import {
   BRAND_PALETTES,
   DESIGN_STYLES,
   type DesignStyle,
+  FONT_PAIRS,
+  type FontPair,
   defaultBrand,
   loadBrand,
   saveBrand,
@@ -37,10 +43,28 @@ import {
   upsertCarousel,
 } from "@/lib/carousel-library";
 import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText } from "lucide-react";
+import {
+  ELEMENTS,
+  ELEMENT_CATEGORIES,
+  type ElementDef,
+  elementsByCategory,
+  findElement,
+} from "@/lib/elements-library";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
+
+export type SlideElement = {
+  id: string; // instance id
+  svgId: string; // ref to ELEMENTS
+  x: number; // 0-100 (% do card)
+  y: number; // 0-100
+  scale: number; // 0.2 - 2
+  rotation: number; // -180..180
+  opacity: number; // 0..1
+  color: string;
+};
 
 type Slide = {
   kicker: string;
@@ -60,7 +84,37 @@ type Slide = {
   subtitleColor?: string;
   kickerColor?: string;
   highlightColor?: string;
+  titleScale?: number; // 0.7 - 1.6
+  subtitleScale?: number;
+  layout?: "overlay" | "image-left" | "image-right";
+  elements?: SlideElement[];
 };
+
+function migrateSlide(d: Partial<Slide>): Slide {
+  return {
+    kicker: d.kicker ?? "",
+    title: d.title ?? "",
+    subtitle: d.subtitle ?? "",
+    buttonText: d.buttonText ?? "",
+    buttonCaption: d.buttonCaption ?? "",
+    handle: d.handle ?? "",
+    author: d.author ?? "",
+    image: d.image ?? null,
+    align: d.align ?? "bottom",
+    gradient: d.gradient ?? "bottom",
+    gradientIntensity: d.gradientIntensity ?? 70,
+    buttonPosition: d.buttonPosition ?? "inline",
+    imagePos: d.imagePos ?? "center",
+    titleColor: d.titleColor,
+    subtitleColor: d.subtitleColor,
+    kickerColor: d.kickerColor,
+    highlightColor: d.highlightColor,
+    titleScale: d.titleScale ?? 1,
+    subtitleScale: d.subtitleScale ?? 1,
+    layout: d.layout ?? "overlay",
+    elements: d.elements ?? [],
+  };
+}
 
 // Renderiza texto com **palavra** destacada em cor de marcador.
 function renderRich(text: string, highlight: string): React.ReactNode {
@@ -104,21 +158,12 @@ function sanitizeTitle(t: string) {
 }
 
 function blankSlides(brand: Brand): Slide[] {
-  return Array.from({ length: 8 }, () => ({
-    kicker: "",
-    title: "",
-    subtitle: "",
-    buttonText: "",
-    buttonCaption: "",
-    handle: brand.handle,
-    author: brand.author,
-    image: null,
-    align: "bottom",
-    gradient: "bottom",
-    gradientIntensity: 70,
-    buttonPosition: "inline",
-    imagePos: "center",
-  }));
+  return Array.from({ length: 8 }, () =>
+    migrateSlide({
+      handle: brand.handle,
+      author: brand.author,
+    }),
+  );
 }
 
 function Index() {
@@ -142,6 +187,7 @@ function Index() {
   const [savedFlash, setSavedFlash] = useState(false);
   const [compact, setCompact] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
+  const [showElements, setShowElements] = useState(false);
   const slideRef = useRef<HTMLDivElement>(null);
 
   const generateFn = useServerFn(generateCarousel);
@@ -160,15 +206,7 @@ function Index() {
       try {
         const data = JSON.parse(raw);
         if (Array.isArray(data) && data.length === 8) {
-          setSlides(
-            data.map((d: Slide) => ({
-              ...d,
-              gradient: d.gradient ?? "bottom",
-              gradientIntensity: d.gradientIntensity ?? 70,
-              buttonPosition: d.buttonPosition ?? "inline",
-              imagePos: d.imagePos ?? "center",
-            })),
-          );
+          setSlides(data.map((d: Partial<Slide>) => migrateSlide(d)));
           setView("editor");
         }
       } catch {}
@@ -206,13 +244,7 @@ function Index() {
   };
 
   const handleLoadCarousel = (item: SavedCarousel) => {
-    const data = (item.slides as Slide[]).map((d) => ({
-      ...d,
-      gradient: d.gradient ?? "bottom",
-      gradientIntensity: d.gradientIntensity ?? 70,
-      buttonPosition: d.buttonPosition ?? "inline",
-      imagePos: d.imagePos ?? "center",
-    }));
+    const data = (item.slides as Partial<Slide>[]).map((d) => migrateSlide(d));
     setSlides(data);
     setCurrentId(item.id);
     setCurrentName(item.name);
@@ -265,21 +297,19 @@ function Index() {
           },
         },
       });
-      const next: Slide[] = result.slides.map((s, i) => ({
-        kicker: s.kicker,
-        title: sanitizeTitle(s.title),
-        subtitle: s.subtitle,
-        buttonText: s.buttonText,
-        buttonCaption: s.buttonCaption,
-        handle: brand.handle,
-        author: brand.author,
-        image: null,
-        align: s.align,
-        gradient: "bottom",
-        gradientIntensity: 70,
-        buttonPosition: i === 7 ? "bottom" : "inline",
-        imagePos: "center",
-      }));
+      const next: Slide[] = result.slides.map((s, i) =>
+        migrateSlide({
+          kicker: s.kicker,
+          title: sanitizeTitle(s.title),
+          subtitle: s.subtitle,
+          buttonText: s.buttonText,
+          buttonCaption: s.buttonCaption,
+          handle: brand.handle,
+          author: brand.author,
+          align: s.align,
+          buttonPosition: i === 7 ? "bottom" : "inline",
+        }),
+      );
       setSlides(next);
       setActive(0);
       setCurrentId(null);
@@ -613,96 +643,191 @@ function Index() {
                     className="absolute inset-0 flex flex-col"
                     style={{ background: BG, color: "white" }}
                   >
-                    {s.image && (
-                      <img
-                        src={s.image}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
-                        style={{ objectPosition: `center ${s.imagePos === "top" ? "0%" : s.imagePos === "bottom" ? "100%" : "50%"}` }}
-                      />
-                    )}
-                    {s.image && (
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: gradientFor(s.gradient, s.gradientIntensity) }}
-                      />
-                    )}
-                    <div className={`relative z-10 flex h-full w-full flex-col px-7 ${s.buttonText && s.buttonPosition === "bottom" ? "pb-44" : "pb-20"} ${alignClass}`}>
-                      <div>
-                        <div
-                          className="text-[11px] font-bold tracking-[0.28em]"
-                          style={{ color: s.kickerColor ?? GOLD }}
-                        >
-                          {s.kicker}
-                        </div>
-                        <h2
-                          className="mt-3 whitespace-pre-line text-[28px] leading-[1.1] font-bold"
-                          style={{
-                            fontFamily: brand.fontFamily,
-                            color: s.titleColor ?? "#ffffff",
-                            letterSpacing: "-0.01em",
-                            wordSpacing: "normal",
-                          }}
-                        >
-                          {renderRich(s.title, s.highlightColor ?? GOLD)}
-                        </h2>
-                        {s.subtitle && (
-                          <p
-                            className="mt-3 text-[13px] leading-snug"
-                            style={{ color: s.subtitleColor ?? "rgba(255,255,255,0.8)" }}
-                          >
-                            {renderRich(s.subtitle, s.highlightColor ?? GOLD)}
-                          </p>
-                        )}
-                        {s.buttonText && s.buttonPosition === "inline" && (
-                          <div className="mt-5">
+                    {(() => {
+                      const layout = s.layout ?? "overlay";
+                      const hasImg = !!s.image;
+                      const split = hasImg && layout !== "overlay";
+                      const imageSide = layout === "image-left" ? "left" : "right";
+                      const objPos = `center ${s.imagePos === "top" ? "0%" : s.imagePos === "bottom" ? "100%" : "50%"}`;
+                      const titleScale = s.titleScale ?? 1;
+                      const subScale = s.subtitleScale ?? 1;
+                      const bodyFont = brand.fontBody ?? "Inter, system-ui, sans-serif";
+                      return (
+                        <>
+                          {/* Camada de imagem */}
+                          {hasImg && !split && (
+                            <img
+                              src={s.image!}
+                              alt=""
+                              className="absolute inset-0 h-full w-full object-cover"
+                              style={{ objectPosition: objPos }}
+                            />
+                          )}
+                          {hasImg && !split && (
                             <div
-                              className="w-full rounded-md py-3 text-center text-[13px] font-bold"
-                              style={{ background: GOLD, color: "#111" }}
+                              className="absolute inset-0"
+                              style={{ background: gradientFor(s.gradient, s.gradientIntensity) }}
+                            />
+                          )}
+                          {hasImg && split && (
+                            <div
+                              className={`absolute inset-y-0 w-1/2 ${imageSide === "left" ? "left-0" : "right-0"}`}
                             >
-                              {s.buttonText}
+                              <img
+                                src={s.image!}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                style={{ objectPosition: objPos }}
+                              />
+                              {/* fade sutil entre imagem e texto */}
+                              <div
+                                className="absolute inset-y-0 w-8"
+                                style={{
+                                  [imageSide === "left" ? "right" : "left"]: 0,
+                                  background:
+                                    imageSide === "left"
+                                      ? `linear-gradient(to right, transparent, ${BG})`
+                                      : `linear-gradient(to left, transparent, ${BG})`,
+                                } as React.CSSProperties}
+                              />
                             </div>
-                            {s.buttonCaption && (
-                              <div className="mt-2 text-center text-[11px] text-white/60">
-                                {s.buttonCaption}
+                          )}
+
+                          {/* Elementos decorativos */}
+                          {(s.elements ?? []).map((el) => {
+                            const def = findElement(el.svgId);
+                            if (!def) return null;
+                            return (
+                              <div
+                                key={el.id}
+                                className="pointer-events-none absolute"
+                                style={{
+                                  left: `${el.x}%`,
+                                  top: `${el.y}%`,
+                                  width: `${18 * el.scale}%`,
+                                  aspectRatio: "1 / 1",
+                                  transform: `translate(-50%, -50%) rotate(${el.rotation}deg)`,
+                                  opacity: el.opacity,
+                                  color: el.color,
+                                }}
+                                dangerouslySetInnerHTML={{ __html: def.svg }}
+                              />
+                            );
+                          })}
+
+                          {/* Container do texto */}
+                          <div
+                            className={`relative z-10 flex h-full flex-col ${
+                              split
+                                ? `w-1/2 px-6 ${imageSide === "left" ? "ml-auto" : "mr-auto"}`
+                                : "w-full px-7"
+                            } ${s.buttonText && s.buttonPosition === "bottom" ? "pb-44" : "pb-20"} ${alignClass}`}
+                          >
+                            <div>
+                              <div
+                                className="font-bold tracking-[0.28em]"
+                                style={{
+                                  color: s.kickerColor ?? GOLD,
+                                  fontSize: 11 * titleScale,
+                                  fontFamily: bodyFont,
+                                }}
+                              >
+                                {s.kicker}
                               </div>
-                            )}
+                              <h2
+                                className="mt-3 whitespace-pre-line font-bold"
+                                style={{
+                                  fontFamily: brand.fontFamily,
+                                  color: s.titleColor ?? "#ffffff",
+                                  letterSpacing: "-0.01em",
+                                  wordSpacing: "normal",
+                                  fontSize: 28 * titleScale,
+                                  lineHeight: 1.1,
+                                }}
+                              >
+                                {renderRich(s.title, s.highlightColor ?? GOLD)}
+                              </h2>
+                              {s.subtitle && (
+                                <p
+                                  className="mt-3 leading-snug"
+                                  style={{
+                                    color: s.subtitleColor ?? "rgba(255,255,255,0.8)",
+                                    fontSize: 13 * subScale,
+                                    fontFamily: bodyFont,
+                                  }}
+                                >
+                                  {renderRich(s.subtitle, s.highlightColor ?? GOLD)}
+                                </p>
+                              )}
+                              {s.buttonText && s.buttonPosition === "inline" && (
+                                <div className="mt-5">
+                                  <div
+                                    className="w-full rounded-md py-3 text-center text-[13px] font-bold"
+                                    style={{ background: GOLD, color: "#111", fontFamily: bodyFont }}
+                                  >
+                                    {s.buttonText}
+                                  </div>
+                                  {s.buttonCaption && (
+                                    <div
+                                      className="mt-2 text-center text-[11px] text-white/60"
+                                      style={{ fontFamily: bodyFont }}
+                                    >
+                                      {s.buttonCaption}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    {s.buttonText && s.buttonPosition === "bottom" && (
-                      <div className="absolute right-0 bottom-16 left-0 z-10 px-7">
-                        <div
-                          className="w-full rounded-md py-3 text-center text-[13px] font-bold"
-                          style={{ background: GOLD, color: "#111" }}
-                        >
-                          {s.buttonText}
-                        </div>
-                        {s.buttonCaption && (
-                          <div className="mt-2 text-center text-[11px] text-white/60">
-                            {s.buttonCaption}
+
+                          {s.buttonText && s.buttonPosition === "bottom" && (
+                            <div
+                              className={`absolute bottom-16 z-10 ${
+                                split
+                                  ? `w-1/2 px-6 ${imageSide === "left" ? "right-0" : "left-0"}`
+                                  : "right-0 left-0 px-7"
+                              }`}
+                            >
+                              <div
+                                className="w-full rounded-md py-3 text-center text-[13px] font-bold"
+                                style={{ background: GOLD, color: "#111", fontFamily: bodyFont }}
+                              >
+                                {s.buttonText}
+                              </div>
+                              {s.buttonCaption && (
+                                <div
+                                  className="mt-2 text-center text-[11px] text-white/60"
+                                  style={{ fontFamily: bodyFont }}
+                                >
+                                  {s.buttonCaption}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Footer fixo */}
+                          <div className="absolute right-0 bottom-0 left-0 z-10 px-7 pb-5">
+                            <div
+                              className="flex items-center justify-between text-[11px] text-white/70"
+                              style={{ fontFamily: bodyFont }}
+                            >
+                              <span>
+                                {s.handle} · {s.author}
+                              </span>
+                              <span>{active + 1}/8</span>
+                            </div>
+                            <div
+                              className="mt-2 h-[3px] w-full rounded-full"
+                              style={{
+                                background: `linear-gradient(to right, ${GOLD} ${
+                                  ((active + 1) / 8) * 100
+                                }%, rgba(255,255,255,0.15) ${((active + 1) / 8) * 100}%)`,
+                              }}
+                            />
                           </div>
-                        )}
-                      </div>
-                    )}
-                    {/* Footer fixo na parte inferior */}
-                    <div className="absolute right-0 bottom-0 left-0 z-10 px-7 pb-5">
-                      <div className="flex items-center justify-between text-[11px] text-white/70">
-                        <span>
-                          {s.handle} · {s.author}
-                        </span>
-                        <span>{active + 1}/8</span>
-                      </div>
-                      <div
-                        className="mt-2 h-[3px] w-full rounded-full"
-                        style={{
-                          background: `linear-gradient(to right, ${GOLD} ${
-                            ((active + 1) / 8) * 100
-                          }%, rgba(255,255,255,0.15) ${((active + 1) / 8) * 100}%)`,
-                        }}
-                      />
-                    </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -958,6 +1083,98 @@ function Index() {
                   </div>
                 )}
               </Field>
+
+              <Field label={`Tamanho do título · ${Math.round((s.titleScale ?? 1) * 100)}%`}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => update({ titleScale: Math.max(0.7, (s.titleScale ?? 1) - 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Diminuir título"
+                  >
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={s.titleScale ?? 1}
+                    onChange={(e) => update({ titleScale: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <button
+                    onClick={() => update({ titleScale: Math.min(1.6, (s.titleScale ?? 1) + 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Aumentar título"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={`Tamanho do subtítulo · ${Math.round((s.subtitleScale ?? 1) * 100)}%`}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => update({ subtitleScale: Math.max(0.7, (s.subtitleScale ?? 1) - 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Diminuir subtítulo"
+                  >
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={s.subtitleScale ?? 1}
+                    onChange={(e) => update({ subtitleScale: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <button
+                    onClick={() => update({ subtitleScale: Math.min(1.6, (s.subtitleScale ?? 1) + 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Aumentar subtítulo"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </Field>
+
+              <Field label="Layout do card">
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { v: "overlay", l: "Sobreposto" },
+                      { v: "image-left", l: "Foto esq." },
+                      { v: "image-right", l: "Foto dir." },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.v}
+                      onClick={() => update({ layout: opt.v })}
+                      className={`rounded-md py-2 text-xs font-semibold ${
+                        (s.layout ?? "overlay") === opt.v
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/70"
+                      }`}
+                    >
+                      {opt.l}
+                    </button>
+                  ))}
+                </div>
+                {!s.image && (s.layout ?? "overlay") !== "overlay" && (
+                  <p className="mt-1 text-[10px] text-white/40">Envie uma foto para o layout dividido aparecer.</p>
+                )}
+              </Field>
+
+              <Field label={`Elementos decorativos${s.elements?.length ? ` · ${s.elements.length}` : ""}`}>
+                <button
+                  onClick={() => setShowElements(true)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white/5 py-2 text-xs font-semibold text-white/80 hover:bg-white/10"
+                >
+                  <Shapes className="h-3.5 w-3.5" /> Abrir biblioteca
+                </button>
+              </Field>
             </aside>
           </div>
         )}
@@ -1006,6 +1223,13 @@ function Index() {
           slides={slides}
           brand={brand}
           onClose={() => setShowCaption(false)}
+        />
+      )}
+      {showElements && (
+        <ElementsDialog
+          slide={s}
+          onChange={(patch: Partial<Slide>) => update(patch)}
+          onClose={() => setShowElements(false)}
         />
       )}
     </div>
@@ -1120,6 +1344,32 @@ function BrandDialog({
               className="h-10 w-full rounded-md border border-white/10 bg-black/40"
             />
           </Field>
+          <div className="col-span-2">
+            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
+              Tipografia
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {FONT_PAIRS.map((fp) => {
+                const active = b.fontFamily === fp.heading && b.fontBody === fp.body;
+                return (
+                  <button
+                    key={fp.name}
+                    onClick={() => setB((s) => ({ ...s, fontFamily: fp.heading, fontBody: fp.body }))}
+                    className={`rounded-md border p-2 text-left text-[11px] transition ${
+                      active ? "border-white bg-white/5" : "border-white/10 hover:border-white/30"
+                    }`}
+                  >
+                    <div className="truncate font-bold text-white" style={{ fontFamily: fp.heading }}>
+                      {fp.name}
+                    </div>
+                    <div className="truncate text-[10px] text-white/50" style={{ fontFamily: fp.body }}>
+                      {fp.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -1469,6 +1719,224 @@ function CaptionDialog({
             Gerar legenda ({framework})
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ElementsDialog({
+  slide,
+  onChange,
+  onClose,
+}: {
+  slide: Slide;
+  onChange: (patch: Partial<Slide>) => void;
+  onClose: () => void;
+}) {
+  const [cat, setCat] = useState<ElementDef["category"]>("negocios");
+  const elements = slide.elements ?? [];
+  const [selectedId, setSelectedId] = useState<string | null>(elements[0]?.id ?? null);
+  const selected = elements.find((e) => e.id === selectedId) ?? null;
+
+  const addElement = (def: ElementDef) => {
+    const el: SlideElement = {
+      id: `el_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      svgId: def.id,
+      x: 80,
+      y: 20,
+      scale: 1,
+      rotation: 0,
+      opacity: 0.9,
+      color: "#c2a25b",
+    };
+    const next = [...elements, el];
+    onChange({ elements: next });
+    setSelectedId(el.id);
+  };
+
+  const updateEl = (patch: Partial<SlideElement>) => {
+    if (!selected) return;
+    onChange({
+      elements: elements.map((e) => (e.id === selected.id ? { ...e, ...patch } : e)),
+    });
+  };
+
+  const removeEl = (id: string) => {
+    onChange({ elements: elements.filter((e) => e.id !== id) });
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
+      <div className="w-full max-w-3xl rounded-2xl bg-[#161616] p-5 ring-1 ring-white/10">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold">Elementos decorativos</h2>
+          <button
+            onClick={onClose}
+            className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {ELEMENT_CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              onClick={() => setCat(c.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-black/30 p-2 sm:grid-cols-6">
+          {elementsByCategory(cat).map((def) => (
+            <button
+              key={def.id}
+              onClick={() => addElement(def)}
+              title={def.name}
+              className="flex aspect-square items-center justify-center rounded-md bg-white/5 p-2 text-white/80 hover:bg-white/15"
+              dangerouslySetInnerHTML={{ __html: def.svg }}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-2 text-[11px] tracking-wider uppercase text-white/50">
+            Neste slide · {elements.length}
+          </div>
+          {elements.length === 0 && (
+            <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>
+          )}
+          {elements.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {elements.map((el) => {
+                const def = findElement(el.svgId);
+                if (!def) return null;
+                const isSel = el.id === selectedId;
+                return (
+                  <div
+                    key={el.id}
+                    className={`relative flex flex-col items-center rounded-md border p-1 ${
+                      isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedId(el.id)}
+                      className="flex h-10 w-10 items-center justify-center"
+                      style={{ color: el.color }}
+                      dangerouslySetInnerHTML={{ __html: def.svg }}
+                    />
+                    <button
+                      onClick={() => removeEl(el.id)}
+                      className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white"
+                      aria-label="Remover"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {selected && (
+          <div className="mt-4 space-y-3 rounded-lg bg-black/30 p-3">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  X · {Math.round(selected.x)}%
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={selected.x}
+                  onChange={(e) => updateEl({ x: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Y · {Math.round(selected.y)}%
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={selected.y}
+                  onChange={(e) => updateEl({ y: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Tamanho · {Math.round(selected.scale * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min={0.2}
+                  max={2.5}
+                  step={0.05}
+                  value={selected.scale}
+                  onChange={(e) => updateEl({ scale: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Rotação · {Math.round(selected.rotation)}°
+                </div>
+                <input
+                  type="range"
+                  min={-180}
+                  max={180}
+                  value={selected.rotation}
+                  onChange={(e) => updateEl({ rotation: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Opacidade · {Math.round(selected.opacity * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={selected.opacity}
+                  onChange={(e) => updateEl({ opacity: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">Cor</div>
+                <input
+                  type="color"
+                  value={selected.color}
+                  onChange={(e) => updateEl({ color: e.target.value })}
+                  className="h-8 w-full cursor-pointer rounded bg-transparent"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black"
+          >
+            Concluir
+          </button>
+        </div>
       </div>
     </div>
   );

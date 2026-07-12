@@ -8,6 +8,7 @@ export type Brand = {
   primaryColor: string;
   bgColor: string;
   fontFamily: string;
+  fontBody?: string;
 };
 
 export const defaultBrand: Brand = {
@@ -20,6 +21,7 @@ export const defaultBrand: Brand = {
   primaryColor: "#8b5a2b",
   bgColor: "#0a0a0a",
   fontFamily: 'Georgia, "Times New Roman", serif',
+  fontBody: 'Inter, system-ui, sans-serif',
 };
 
 export const BRAND_PALETTES: { name: string; primary: string; bg: string }[] = [
@@ -65,6 +67,65 @@ export const DESIGN_STYLES: DesignStyle[] = [
     fontFamily: 'Georgia, "Times New Roman", serif',
     primaryColor: "#6b3a1d",
     bgColor: "#f5f1ea",
+  },
+];
+
+export type FontPair = {
+  name: string;
+  description: string;
+  heading: string;
+  body: string;
+};
+
+// Fontes servidas pelo <link> Google Fonts em src/routes/__root.tsx
+export const FONT_PAIRS: FontPair[] = [
+  {
+    name: "Playfair × Inter",
+    description: "Editorial clássico, autoridade",
+    heading: '"Playfair Display", Georgia, serif',
+    body: '"Inter", system-ui, sans-serif',
+  },
+  {
+    name: "Instrument × Work Sans",
+    description: "Revista moderna, elegante",
+    heading: '"Instrument Serif", Georgia, serif',
+    body: '"Work Sans", system-ui, sans-serif',
+  },
+  {
+    name: "Fraunces × IBM Plex",
+    description: "Serif com peso, tech premium",
+    heading: '"Fraunces", Georgia, serif',
+    body: '"IBM Plex Sans", system-ui, sans-serif',
+  },
+  {
+    name: "Space Grotesk × DM Sans",
+    description: "Moderno tech, startup",
+    heading: '"Space Grotesk", system-ui, sans-serif',
+    body: '"DM Sans", system-ui, sans-serif',
+  },
+  {
+    name: "Syne × Plus Jakarta",
+    description: "Criativo, ar de boutique",
+    heading: '"Syne", system-ui, sans-serif',
+    body: '"Plus Jakarta Sans", system-ui, sans-serif',
+  },
+  {
+    name: "Bebas × Barlow",
+    description: "Impacto, esporte, evento",
+    heading: '"Bebas Neue", Impact, sans-serif',
+    body: '"Barlow", system-ui, sans-serif',
+  },
+  {
+    name: "Archivo Black × Hind",
+    description: "Manchete forte, notícia",
+    heading: '"Archivo Black", system-ui, sans-serif',
+    body: '"Hind", system-ui, sans-serif',
+  },
+  {
+    name: "JetBrains × Inter",
+    description: "Mono técnico, IA / dev",
+    heading: '"JetBrains Mono", monospace',
+    body: '"Inter", system-ui, sans-serif',
   },
 ];
 

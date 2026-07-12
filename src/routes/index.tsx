@@ -1083,6 +1083,98 @@ function Index() {
                   </div>
                 )}
               </Field>
+
+              <Field label={`Tamanho do título · ${Math.round((s.titleScale ?? 1) * 100)}%`}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => update({ titleScale: Math.max(0.7, (s.titleScale ?? 1) - 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Diminuir título"
+                  >
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={s.titleScale ?? 1}
+                    onChange={(e) => update({ titleScale: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <button
+                    onClick={() => update({ titleScale: Math.min(1.6, (s.titleScale ?? 1) + 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Aumentar título"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={`Tamanho do subtítulo · ${Math.round((s.subtitleScale ?? 1) * 100)}%`}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => update({ subtitleScale: Math.max(0.7, (s.subtitleScale ?? 1) - 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Diminuir subtítulo"
+                  >
+                    <Minimize2 className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="range"
+                    min={0.7}
+                    max={1.6}
+                    step={0.05}
+                    value={s.subtitleScale ?? 1}
+                    onChange={(e) => update({ subtitleScale: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <button
+                    onClick={() => update({ subtitleScale: Math.min(1.6, (s.subtitleScale ?? 1) + 0.1) })}
+                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    aria-label="Aumentar subtítulo"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </Field>
+
+              <Field label="Layout do card">
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      { v: "overlay", l: "Sobreposto" },
+                      { v: "image-left", l: "Foto esq." },
+                      { v: "image-right", l: "Foto dir." },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.v}
+                      onClick={() => update({ layout: opt.v })}
+                      className={`rounded-md py-2 text-xs font-semibold ${
+                        (s.layout ?? "overlay") === opt.v
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/70"
+                      }`}
+                    >
+                      {opt.l}
+                    </button>
+                  ))}
+                </div>
+                {!s.image && (s.layout ?? "overlay") !== "overlay" && (
+                  <p className="mt-1 text-[10px] text-white/40">Envie uma foto para o layout dividido aparecer.</p>
+                )}
+              </Field>
+
+              <Field label={`Elementos decorativos${s.elements?.length ? ` · ${s.elements.length}` : ""}`}>
+                <button
+                  onClick={() => setShowElements(true)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white/5 py-2 text-xs font-semibold text-white/80 hover:bg-white/10"
+                >
+                  <Shapes className="h-3.5 w-3.5" /> Abrir biblioteca
+                </button>
+              </Field>
             </aside>
           </div>
         )}

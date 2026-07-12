@@ -86,9 +86,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c481c07c-67c9-49d6-91d8-e6c7c620baef/id-preview-9e47b6ee--74888500-0b0c-4ccc-871e-98f05986c3fb.lovable.app-1780449909937.png" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;700&family=Fraunces:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&family=Syne:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;500;700&family=Bebas+Neue&family=Barlow:wght@400;500;700&family=Archivo+Black&family=Hind:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
       },
     ],
   }),

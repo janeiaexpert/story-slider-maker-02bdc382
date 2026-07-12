@@ -29,6 +29,8 @@ import {
   BRAND_PALETTES,
   DESIGN_STYLES,
   type DesignStyle,
+  FONT_PAIRS,
+  type FontPair,
   defaultBrand,
   loadBrand,
   saveBrand,
@@ -41,6 +43,13 @@ import {
   upsertCarousel,
 } from "@/lib/carousel-library";
 import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText } from "lucide-react";
+import {
+  ELEMENTS,
+  ELEMENT_CATEGORIES,
+  type ElementDef,
+  elementsByCategory,
+  findElement,
+} from "@/lib/elements-library";
 
 export const Route = createFileRoute("/")({
   component: Index,

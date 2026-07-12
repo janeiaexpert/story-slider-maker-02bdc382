@@ -296,21 +296,19 @@ function Index() {
           },
         },
       });
-      const next: Slide[] = result.slides.map((s, i) => ({
-        kicker: s.kicker,
-        title: sanitizeTitle(s.title),
-        subtitle: s.subtitle,
-        buttonText: s.buttonText,
-        buttonCaption: s.buttonCaption,
-        handle: brand.handle,
-        author: brand.author,
-        image: null,
-        align: s.align,
-        gradient: "bottom",
-        gradientIntensity: 70,
-        buttonPosition: i === 7 ? "bottom" : "inline",
-        imagePos: "center",
-      }));
+      const next: Slide[] = result.slides.map((s, i) =>
+        migrateSlide({
+          kicker: s.kicker,
+          title: sanitizeTitle(s.title),
+          subtitle: s.subtitle,
+          buttonText: s.buttonText,
+          buttonCaption: s.buttonCaption,
+          handle: brand.handle,
+          author: brand.author,
+          align: s.align,
+          buttonPosition: i === 7 ? "bottom" : "inline",
+        }),
+      );
       setSlides(next);
       setActive(0);
       setCurrentId(null);

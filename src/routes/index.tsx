@@ -158,21 +158,12 @@ function sanitizeTitle(t: string) {
 }
 
 function blankSlides(brand: Brand): Slide[] {
-  return Array.from({ length: 8 }, () => ({
-    kicker: "",
-    title: "",
-    subtitle: "",
-    buttonText: "",
-    buttonCaption: "",
-    handle: brand.handle,
-    author: brand.author,
-    image: null,
-    align: "bottom",
-    gradient: "bottom",
-    gradientIntensity: 70,
-    buttonPosition: "inline",
-    imagePos: "center",
-  }));
+  return Array.from({ length: 8 }, () =>
+    migrateSlide({
+      handle: brand.handle,
+      author: brand.author,
+    }),
+  );
 }
 
 function Index() {

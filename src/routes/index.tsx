@@ -1723,3 +1723,221 @@ function CaptionDialog({
     </div>
   );
 }
+
+function ElementsDialog({
+  slide,
+  onChange,
+  onClose,
+}: {
+  slide: Slide;
+  onChange: (patch: Partial<Slide>) => void;
+  onClose: () => void;
+}) {
+  const [cat, setCat] = useState<ElementDef["category"]>("negocios");
+  const elements = slide.elements ?? [];
+  const [selectedId, setSelectedId] = useState<string | null>(elements[0]?.id ?? null);
+  const selected = elements.find((e) => e.id === selectedId) ?? null;
+
+  const addElement = (def: ElementDef) => {
+    const el: SlideElement = {
+      id: `el_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      svgId: def.id,
+      x: 80,
+      y: 20,
+      scale: 1,
+      rotation: 0,
+      opacity: 0.9,
+      color: "#c2a25b",
+    };
+    const next = [...elements, el];
+    onChange({ elements: next });
+    setSelectedId(el.id);
+  };
+
+  const updateEl = (patch: Partial<SlideElement>) => {
+    if (!selected) return;
+    onChange({
+      elements: elements.map((e) => (e.id === selected.id ? { ...e, ...patch } : e)),
+    });
+  };
+
+  const removeEl = (id: string) => {
+    onChange({ elements: elements.filter((e) => e.id !== id) });
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
+      <div className="w-full max-w-3xl rounded-2xl bg-[#161616] p-5 ring-1 ring-white/10">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold">Elementos decorativos</h2>
+          <button
+            onClick={onClose}
+            className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {ELEMENT_CATEGORIES.map((c) => (
+            <button
+              key={c.key}
+              onClick={() => setCat(c.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
+                cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-black/30 p-2 sm:grid-cols-6">
+          {elementsByCategory(cat).map((def) => (
+            <button
+              key={def.id}
+              onClick={() => addElement(def)}
+              title={def.name}
+              className="flex aspect-square items-center justify-center rounded-md bg-white/5 p-2 text-white/80 hover:bg-white/15"
+              dangerouslySetInnerHTML={{ __html: def.svg }}
+            />
+          ))}
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-2 text-[11px] tracking-wider uppercase text-white/50">
+            Neste slide · {elements.length}
+          </div>
+          {elements.length === 0 && (
+            <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>
+          )}
+          {elements.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {elements.map((el) => {
+                const def = findElement(el.svgId);
+                if (!def) return null;
+                const isSel = el.id === selectedId;
+                return (
+                  <div
+                    key={el.id}
+                    className={`relative flex flex-col items-center rounded-md border p-1 ${
+                      isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5"
+                    }`}
+                  >
+                    <button
+                      onClick={() => setSelectedId(el.id)}
+                      className="flex h-10 w-10 items-center justify-center"
+                      style={{ color: el.color }}
+                      dangerouslySetInnerHTML={{ __html: def.svg }}
+                    />
+                    <button
+                      onClick={() => removeEl(el.id)}
+                      className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white"
+                      aria-label="Remover"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {selected && (
+          <div className="mt-4 space-y-3 rounded-lg bg-black/30 p-3">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  X · {Math.round(selected.x)}%
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={selected.x}
+                  onChange={(e) => updateEl({ x: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Y · {Math.round(selected.y)}%
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={selected.y}
+                  onChange={(e) => updateEl({ y: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Tamanho · {Math.round(selected.scale * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min={0.2}
+                  max={2.5}
+                  step={0.05}
+                  value={selected.scale}
+                  onChange={(e) => updateEl({ scale: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Rotação · {Math.round(selected.rotation)}°
+                </div>
+                <input
+                  type="range"
+                  min={-180}
+                  max={180}
+                  value={selected.rotation}
+                  onChange={(e) => updateEl({ rotation: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Opacidade · {Math.round(selected.opacity * 100)}%
+                </div>
+                <input
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={selected.opacity}
+                  onChange={(e) => updateEl({ opacity: Number(e.target.value) })}
+                  className="w-full accent-white"
+                />
+              </label>
+              <label className="block">
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">Cor</div>
+                <input
+                  type="color"
+                  value={selected.color}
+                  onChange={(e) => updateEl({ color: e.target.value })}
+                  className="h-8 w-full cursor-pointer rounded bg-transparent"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black"
+          >
+            Concluir
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

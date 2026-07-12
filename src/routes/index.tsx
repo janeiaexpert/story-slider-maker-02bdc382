@@ -1344,6 +1344,32 @@ function BrandDialog({
               className="h-10 w-full rounded-md border border-white/10 bg-black/40"
             />
           </Field>
+          <div className="col-span-2">
+            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
+              Tipografia
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {FONT_PAIRS.map((fp) => {
+                const active = b.fontFamily === fp.heading && b.fontBody === fp.body;
+                return (
+                  <button
+                    key={fp.name}
+                    onClick={() => setB((s) => ({ ...s, fontFamily: fp.heading, fontBody: fp.body }))}
+                    className={`rounded-md border p-2 text-left text-[11px] transition ${
+                      active ? "border-white bg-white/5" : "border-white/10 hover:border-white/30"
+                    }`}
+                  >
+                    <div className="truncate font-bold text-white" style={{ fontFamily: fp.heading }}>
+                      {fp.name}
+                    </div>
+                    <div className="truncate text-[10px] text-white/50" style={{ fontFamily: fp.body }}>
+                      {fp.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="mt-5 flex justify-end gap-2">

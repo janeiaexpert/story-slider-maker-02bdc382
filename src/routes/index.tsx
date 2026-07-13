@@ -1249,8 +1249,8 @@ function BrandDialog({
   const set = <K extends keyof Brand>(k: K, v: Brand[K]) => setB((s) => ({ ...s, [k]: v }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 p-4 overflow-y-auto">
-      <div className="w-full max-w-lg rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 overflow-y-auto sm:p-8">
+      <div className="w-full max-w-3xl rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10 sm:p-8">
         <h2 className="mb-1 text-lg font-bold">Sua marca</h2>
         <p className="mb-5 text-xs text-white/50">
           A IA usa essas informações para escrever no seu tom e aplicar seu visual.

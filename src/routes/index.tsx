@@ -910,7 +910,11 @@ function Index() {
             </div>
 
             {/* Editor */}
-            <aside className="rounded-xl bg-white/[0.03] p-5 ring-1 ring-white/10">
+            <aside
+              className={`bg-[#161616] ring-1 ring-white/10 lg:rounded-xl lg:bg-white/[0.03] lg:p-5 lg:static lg:max-h-none lg:overflow-visible lg:z-auto fixed left-0 right-0 bottom-0 z-40 rounded-t-2xl p-4 shadow-2xl transition-[max-height] duration-300 ${
+                editorOpen ? "max-h-[70vh] overflow-y-auto" : "max-h-[52px] overflow-hidden"
+              }`}
+            >
               <div className="mb-4 flex items-center justify-between gap-2">
                 <h2 className="text-sm font-bold tracking-wider uppercase text-white/70">
                   Editar slide {active + 1}

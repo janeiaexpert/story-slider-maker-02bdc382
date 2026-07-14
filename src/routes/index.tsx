@@ -857,7 +857,8 @@ function Index() {
                 </div>
               </div>
 
-              <div className="mt-6 grid w-full grid-cols-4 gap-2 sm:grid-cols-8">
+              <div className="mt-6 grid w-full grid-cols-8 gap-2 md:hidden">
+
                 {slides.map((_, i) => (
                   <button
                     key={i}

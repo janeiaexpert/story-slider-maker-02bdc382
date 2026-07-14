@@ -142,3 +142,14 @@
     color: var(--color-foreground);
   }
 }
+
+@media (max-width: 767px) {
+  .card-preview-compact-mobile {
+    right: auto;
+    bottom: auto;
+    width: 210%;
+    height: 210%;
+    transform: scale(0.47619);
+    transform-origin: top left;
+  }
+}

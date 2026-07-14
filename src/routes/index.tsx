@@ -657,15 +657,25 @@ function Index() {
             </div>
 
             {/* Preview */}
-            <div className="flex flex-col items-center md:sticky md:top-4 md:self-start pb-24 md:pb-0">
-              <div className="w-full max-w-[420px]">
+            <div
+              className={`flex flex-col items-center md:sticky md:top-4 md:self-start md:pb-0 ${
+                editorOpen ? "min-h-[46vh] pb-0 md:min-h-0" : "pb-24"
+              }`}
+            >
+              <div
+                className={`w-full max-w-[420px] ${
+                  editorOpen
+                    ? "max-md:fixed max-md:top-1 max-md:left-1/2 max-md:z-30 max-md:w-[200px] max-md:-translate-x-1/2"
+                    : ""
+                }`}
+              >
                 <div
                   className="relative w-full overflow-hidden rounded-2xl shadow-2xl"
                   style={{ aspectRatio: "1080 / 1350" }}
                 >
                   <div
                     ref={slideRef}
-                    className="absolute inset-0 flex flex-col"
+                    className={`absolute inset-0 flex flex-col ${editorOpen ? "card-preview-compact-mobile" : ""}`}
                     style={{ background: BG, color: "white" }}
                   >
                     {(() => {
@@ -703,17 +713,6 @@ function Index() {
                                 alt=""
                                 className="h-full w-full object-cover"
                                 style={{ objectPosition: objPos }}
-                              />
-                              {/* fade sutil entre imagem e texto */}
-                              <div
-                                className="absolute inset-y-0 w-8"
-                                style={{
-                                  [imageSide === "left" ? "right" : "left"]: 0,
-                                  background:
-                                    imageSide === "left"
-                                      ? `linear-gradient(to right, transparent, ${BG})`
-                                      : `linear-gradient(to left, transparent, ${BG})`,
-                                } as React.CSSProperties}
                               />
                             </div>
                           )}
@@ -857,7 +856,7 @@ function Index() {
                 </div>
               </div>
 
-              <div className="mt-6 grid w-full grid-cols-8 gap-2 md:hidden">
+              <div className={`mt-6 w-full grid-cols-8 gap-2 md:hidden ${editorOpen ? "hidden" : "grid"}`}>
 
                 {slides.map((_, i) => (
                   <button
@@ -879,7 +878,7 @@ function Index() {
                 ))}
               </div>
 
-              <div className="mt-4 flex w-full max-w-[420px] gap-2">
+              <div className={`mt-4 w-full max-w-[420px] gap-2 ${editorOpen ? "hidden md:flex" : "flex"}`}>
                 <button
                   onClick={() => setActive((a) => Math.max(0, a - 1))}
                   disabled={active === 0}
@@ -897,7 +896,9 @@ function Index() {
               </div>
               <button
                 onClick={() => exportSlide()}
-                className="mt-2 inline-flex w-full max-w-[420px] items-center justify-center gap-2 rounded-md py-3 text-sm font-bold"
+                className={`mt-2 w-full max-w-[420px] items-center justify-center gap-2 rounded-md py-3 text-sm font-bold ${
+                  editorOpen ? "hidden md:inline-flex" : "inline-flex"
+                }`}
                 style={{ background: GOLD, color: "#111" }}
               >
                 <Download className="h-4 w-4" /> Salvar slide {active + 1}
@@ -912,7 +913,7 @@ function Index() {
             {/* Editor */}
             <aside
               className={`bg-[#161616] ring-1 ring-white/10 md:rounded-xl md:bg-white/[0.03] md:p-5 md:static md:max-h-none md:overflow-visible md:z-auto fixed left-0 right-0 bottom-0 z-40 rounded-t-2xl p-4 shadow-2xl transition-[max-height] duration-300 ${
-                editorOpen ? "max-h-[70vh] overflow-y-auto" : "max-h-[52px] overflow-hidden"
+                editorOpen ? "max-h-[54vh] overflow-y-auto" : "max-h-[52px] overflow-hidden"
               }`}
             >
               <div className="mb-4 flex items-center justify-between gap-2">
@@ -927,7 +928,7 @@ function Index() {
                   {editorOpen ? <><Minimize2 className="h-3.5 w-3.5" /> Encolher</> : <><Maximize2 className="h-3.5 w-3.5" /> Expandir</>}
                 </button>
               </div>
-              <div className={editorOpen ? "" : "hidden lg:block"}>
+              <div className={editorOpen ? "" : "hidden md:block"}>
 
               <Field label="Kicker">
                 <input

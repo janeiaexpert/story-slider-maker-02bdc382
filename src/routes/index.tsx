@@ -665,7 +665,7 @@ function Index() {
               <div
                 className={`w-full max-w-[420px] ${
                   editorOpen
-                    ? "max-md:fixed max-md:top-2 max-md:left-1/2 max-md:z-30 max-md:w-[min(94vw,calc(44vh*0.8))] max-md:-translate-x-1/2"
+                    ? "max-md:fixed max-md:top-1 max-md:left-1/2 max-md:z-30 max-md:w-[220px] max-md:-translate-x-1/2"
                     : ""
                 }`}
               >
@@ -675,7 +675,11 @@ function Index() {
                 >
                   <div
                     ref={slideRef}
-                    className="absolute inset-0 flex flex-col"
+                    className={`absolute inset-0 flex flex-col ${
+                      editorOpen
+                        ? "max-md:!right-auto max-md:!bottom-auto max-md:h-[181.82%] max-md:w-[181.82%] max-md:origin-top-left max-md:scale-[0.55]"
+                        : ""
+                    }`}
                     style={{ background: BG, color: "white" }}
                   >
                     {(() => {

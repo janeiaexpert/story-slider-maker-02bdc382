@@ -37,7 +37,7 @@ export const generateCarousel = createServerFn({ method: "POST" })
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
     const provider = createLovableAiGatewayProvider(key);
-    const model = provider("openai/gpt-5.5");
+    const model = provider("google/gemini-3-flash-preview");
 
     const system = `Você é um estrategista de conteúdo para Instagram, especialista em carrosséis de alta retenção e conversão.
 
@@ -133,7 +133,7 @@ export const generateCaption = createServerFn({ method: "POST" })
     if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
     const provider = createLovableAiGatewayProvider(key);
-    const model = provider("openai/gpt-5.5");
+    const model = provider("google/gemini-3-flash-preview");
 
     const slidesDump = data.slides
       .map(

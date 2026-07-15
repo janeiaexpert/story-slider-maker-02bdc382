@@ -1,14 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { createGroqProvider } from "./ai-gateway.server";
 
 const SlideSchema = z.object({
   kicker: z.string(),
   title: z.string(),
-  subtitle: z.string(),
-  buttonText: z.string(),
-  buttonCaption: z.string(),
+  subtitle: z.string().default(""),
+  buttonText: z.string().default(""),
+  buttonCaption: z.string().default(""),
   align: z.enum(["top", "center", "bottom"]),
 });
 
@@ -30,14 +30,23 @@ const InputSchema = z.object({
   }),
 });
 
+function extractJson(text: string): unknown {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fenced ? fenced[1] : text;
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
+  return JSON.parse(raw.slice(start, end + 1));
+}
+
 export const generateCarousel = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new Error("GROQ_API_KEY ausente");
 
-    const provider = createLovableAiGatewayProvider(key);
-    const model = provider("google/gemini-3-flash-preview");
+    const provider = createGroqProvider(key);
+    const model = provider("deepseek-r1-distill-llama-70b");
 
     const system = `Você é um estrategista de conteúdo para Instagram, especialista em carrosséis de alta retenção e conversão.
 
@@ -94,14 +103,14 @@ ${data.insight}
 
 Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguindo a estrutura. Retorne apenas o JSON.`;
 
-    const { output } = await generateText({
+    const { text } = await generateText({
       model,
       system,
       prompt: userPrompt,
-      output: Output.object({ schema: CarouselSchema }),
     });
 
-    return output;
+    const parsed = CarouselSchema.parse(extractJson(text));
+    return parsed;
   });
 
 const CaptionInputSchema = z.object({
@@ -129,11 +138,11 @@ const CaptionInputSchema = z.object({
 export const generateCaption = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => CaptionInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env.LOVABLE_API_KEY;
-    if (!key) throw new Error("LOVABLE_API_KEY ausente");
+    const key = process.env.GROQ_API_KEY;
+    if (!key) throw new Error("GROQ_API_KEY ausente");
 
-    const provider = createLovableAiGatewayProvider(key);
-    const model = provider("google/gemini-3-flash-preview");
+    const provider = createGroqProvider(key);
+    const model = provider("deepseek-r1-distill-llama-70b");
 
     const slidesDump = data.slides
       .map(
@@ -167,11 +176,12 @@ REGRAS:
 
 ${fwGuide}
 
-FORMATO DE SAÍDA — APENAS JSON VÁLIDO, nada fora:
+RETORNE APENAS JSON VÁLIDO no formato:
 {
   "caption": "texto da legenda com quebras de linha reais",
   "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5"]
 }
+Nada de texto fora do JSON.
 
 REGRAS DAS HASHTAGS:
 - Exatamente 5 hashtags, relevantes ao tema dos slides e ao nicho da marca.
@@ -194,14 +204,15 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
       caption: z.string().min(1),
       hashtags: z.array(z.string()).min(3).max(8),
     });
-    const { output: parsed } = await generateText({
+
+    const { text } = await generateText({
       model,
       system,
       prompt: userPrompt,
-      output: Output.object({ schema: CaptionSchema }),
     });
 
-    // Normaliza hashtags: garante # no início, sem espaço, e exatamente 5
+    const parsed = CaptionSchema.parse(extractJson(text));
+
     const tags = parsed.hashtags
       .map((t) => {
         const clean = t.trim().replace(/\s+/g, "").replace(/^#+/, "");

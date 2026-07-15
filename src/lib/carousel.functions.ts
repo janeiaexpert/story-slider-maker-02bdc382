@@ -37,7 +37,14 @@ function extractJson(text: string): unknown {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
-  return JSON.parse(raw.slice(start, end + 1));
+  let jsonStr = raw.slice(start, end + 1);
+  jsonStr = jsonStr.replace(/[\x00-\x1f\x7f]/g, (ch) => {
+    if (ch === "\n") return "\\n";
+    if (ch === "\r") return "\\r";
+    if (ch === "\t") return "\\t";
+    return "";
+  });
+  return JSON.parse(jsonStr);
 }
 
 export const generateCarousel = createServerFn({ method: "POST" })

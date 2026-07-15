@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { z } from "zod";
 import { createGroqProvider } from "./ai-gateway.server";
 
@@ -103,13 +103,18 @@ ${data.insight}
 
 Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguindo a estrutura. Retorne apenas o JSON.`;
 
-    const { text } = await generateText({
+    const result = streamText({
       model,
       system,
       prompt: userPrompt,
     });
 
-    const parsed = CarouselSchema.parse(extractJson(text));
+    let fullText = "";
+    for await (const chunk of result.textStream) {
+      fullText += chunk;
+    }
+
+    const parsed = CarouselSchema.parse(extractJson(fullText));
     return parsed;
   });
 
@@ -205,13 +210,18 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
       hashtags: z.array(z.string()).min(3).max(8),
     });
 
-    const { text } = await generateText({
+    const result = streamText({
       model,
       system,
       prompt: userPrompt,
     });
 
-    const parsed = CaptionSchema.parse(extractJson(text));
+    let fullText = "";
+    for await (const chunk of result.textStream) {
+      fullText += chunk;
+    }
+
+    const parsed = CaptionSchema.parse(extractJson(fullText));
 
     const tags = parsed.hashtags
       .map((t) => {

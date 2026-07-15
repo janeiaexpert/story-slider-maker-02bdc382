@@ -317,11 +317,11 @@ function Index() {
       setCurrentName("");
       setView("editor");
     } catch (e: any) {
-      console.error(e);
+      console.error("CAROUSEL ERROR:", e);
       const msg = String(e?.message || e);
       if (msg.includes("429")) setError("Limite de uso atingido. Tente novamente em alguns segundos.");
       else if (msg.includes("402")) setError("Créditos esgotados. Adicione créditos no workspace.");
-      else setError("Falha ao gerar carrossel. Tente novamente.");
+      else setError(`Falha ao gerar carrossel: ${msg.slice(0, 200)}`);
     } finally {
       setLoading(false);
     }
@@ -1661,9 +1661,9 @@ function CaptionDialog({
       });
       setCaption(data.caption);
       setTags(data.hashtags);
-    } catch (e) {
-      console.error(e);
-      setErr("Não consegui gerar a legenda. Tente novamente.");
+    } catch (e: any) {
+      console.error("CAPTION ERROR:", e);
+      setErr(`Erro: ${String(e?.message || e)}`);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { streamText } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { createGroqProvider } from "./ai-gateway.server";
 
@@ -31,8 +31,9 @@ const InputSchema = z.object({
 });
 
 function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced ? fenced[1] : text;
+  let cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+  const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = fenced ? fenced[1] : cleaned;
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
@@ -46,7 +47,7 @@ export const generateCarousel = createServerFn({ method: "POST" })
     if (!key) throw new Error("GROQ_API_KEY ausente");
 
     const provider = createGroqProvider(key);
-    const model = provider("deepseek-r1-distill-llama-70b");
+    const model = provider("llama-3.3-70b-versatile");
 
     const system = `Você é um estrategista de conteúdo para Instagram, especialista em carrosséis de alta retenção e conversão.
 
@@ -103,18 +104,13 @@ ${data.insight}
 
 Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguindo a estrutura. Retorne apenas o JSON.`;
 
-    const result = streamText({
+    const { text } = await generateText({
       model,
       system,
       prompt: userPrompt,
     });
 
-    let fullText = "";
-    for await (const chunk of result.textStream) {
-      fullText += chunk;
-    }
-
-    const parsed = CarouselSchema.parse(extractJson(fullText));
+    const parsed = CarouselSchema.parse(extractJson(text));
     return parsed;
   });
 
@@ -147,7 +143,7 @@ export const generateCaption = createServerFn({ method: "POST" })
     if (!key) throw new Error("GROQ_API_KEY ausente");
 
     const provider = createGroqProvider(key);
-    const model = provider("deepseek-r1-distill-llama-70b");
+    const model = provider("llama-3.3-70b-versatile");
 
     const slidesDump = data.slides
       .map(
@@ -210,18 +206,13 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
       hashtags: z.array(z.string()).min(3).max(8),
     });
 
-    const result = streamText({
+    const { text } = await generateText({
       model,
       system,
       prompt: userPrompt,
     });
 
-    let fullText = "";
-    for await (const chunk of result.textStream) {
-      fullText += chunk;
-    }
-
-    const parsed = CaptionSchema.parse(extractJson(fullText));
+    const parsed = CaptionSchema.parse(extractJson(text));
 
     const tags = parsed.hashtags
       .map((t) => {

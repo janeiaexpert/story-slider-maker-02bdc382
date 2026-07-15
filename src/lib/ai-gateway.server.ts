@@ -1,11 +1,12 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export function createGroqProvider(apiKey: string) {
+export function createLovableAiGatewayProvider(apiKey: string) {
   return createOpenAICompatible({
-    name: "groq",
-    baseURL: "https://api.groq.com/openai/v1",
+    name: "lovable-ai",
+    baseURL: "https://ai.gateway.lovable.dev/v1",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "Lovable-API-Key": apiKey,
     },
+    supportsStructuredOutputs: true,
   });
 }

@@ -1,14 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
-import { createGroqProvider } from "./ai-gateway.server";
+import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const SlideSchema = z.object({
   kicker: z.string(),
   title: z.string(),
-  subtitle: z.string().default(""),
-  buttonText: z.string().default(""),
-  buttonCaption: z.string().default(""),
+  subtitle: z.string(),
+  buttonText: z.string(),
+  buttonCaption: z.string(),
   align: z.enum(["top", "center", "bottom"]),
 });
 
@@ -30,23 +30,14 @@ const InputSchema = z.object({
   }),
 });
 
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = fenced ? fenced[1] : text;
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
-  return JSON.parse(raw.slice(start, end + 1));
-}
-
 export const generateCarousel = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("GROQ_API_KEY ausente");
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
-    const provider = createGroqProvider(key);
-    const model = provider("deepseek-r1-distill-llama-70b");
+    const provider = createLovableAiGatewayProvider(key);
+    const model = provider("google/gemini-3-flash-preview");
 
     const system = `Você é um estrategista de conteúdo para Instagram, especialista em carrosséis de alta retenção e conversão.
 
@@ -103,14 +94,14 @@ ${data.insight}
 
 Extraia o ângulo mais forte deste insight e gere o carrossel de 8 slides seguindo a estrutura. Retorne apenas o JSON.`;
 
-    const { text } = await generateText({
+    const { output } = await generateText({
       model,
       system,
       prompt: userPrompt,
+      output: Output.object({ schema: CarouselSchema }),
     });
 
-    const parsed = CarouselSchema.parse(extractJson(text));
-    return parsed;
+    return output;
   });
 
 const CaptionInputSchema = z.object({
@@ -138,11 +129,11 @@ const CaptionInputSchema = z.object({
 export const generateCaption = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => CaptionInputSchema.parse(input))
   .handler(async ({ data }) => {
-    const key = process.env.GROQ_API_KEY;
-    if (!key) throw new Error("GROQ_API_KEY ausente");
+    const key = process.env.LOVABLE_API_KEY;
+    if (!key) throw new Error("LOVABLE_API_KEY ausente");
 
-    const provider = createGroqProvider(key);
-    const model = provider("deepseek-r1-distill-llama-70b");
+    const provider = createLovableAiGatewayProvider(key);
+    const model = provider("google/gemini-3-flash-preview");
 
     const slidesDump = data.slides
       .map(
@@ -199,14 +190,16 @@ ${slidesDump}
 
 Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
 
-    const { text } = await generateText({ model, system, prompt: userPrompt });
-
-    const parsed = z
-      .object({
-        caption: z.string().min(1),
-        hashtags: z.array(z.string()).min(3).max(8),
-      })
-      .parse(extractJson(text));
+    const CaptionSchema = z.object({
+      caption: z.string().min(1),
+      hashtags: z.array(z.string()).min(3).max(8),
+    });
+    const { output: parsed } = await generateText({
+      model,
+      system,
+      prompt: userPrompt,
+      output: Output.object({ schema: CaptionSchema }),
+    });
 
     // Normaliza hashtags: garante # no início, sem espaço, e exatamente 5
     const tags = parsed.hashtags

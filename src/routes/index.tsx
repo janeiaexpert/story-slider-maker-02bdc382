@@ -447,10 +447,9 @@ function Index() {
   const exportSlide = async (idx?: number) => {
     const i = idx ?? active;
     if (i !== active) setActive(i);
-    await new Promise((r) => setTimeout(r, 80));
+    await new Promise((r) => setTimeout(r, 300));
     if (!slideRef.current) return;
-    await inlineImages(slideRef.current);
-    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, skipAutoScale: true });
     await savePng(dataUrl, `slide-${i + 1}.png`);
     setSaved(i);
     setTimeout(() => setSaved(null), 1500);
@@ -480,8 +479,7 @@ function Index() {
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
-        await inlineImages(slideRef.current);
-        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, skipAutoScale: true });
         downloadPng(dataUrl, `slide-${i + 1}.png`);
         await new Promise((r) => setTimeout(r, 350));
       }
@@ -506,10 +504,10 @@ function Index() {
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 250));
         if (!slideRef.current) continue;
-        await inlineImages(slideRef.current);
         const dataUrl = await toPng(slideRef.current, {
           pixelRatio: 2,
           cacheBust: true,
+          skipAutoScale: true,
         });
         if (i > 0) pdf.addPage([pageW, pageH], "portrait");
         pdf.addImage(dataUrl, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
@@ -785,7 +783,6 @@ function Index() {
                              <img
                                src={s.image!}
                                alt=""
-                               crossOrigin="anonymous"
                                className="absolute inset-0 h-full w-full object-cover"
                               style={{ objectPosition: objPos }}
                             />
@@ -803,7 +800,6 @@ function Index() {
                                <img
                                  src={s.image!}
                                  alt=""
-                                 crossOrigin="anonymous"
                                  className="h-full w-full object-cover"
                                 style={{ objectPosition: objPos }}
                               />

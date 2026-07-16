@@ -40,7 +40,7 @@ export async function loadLibrary(): Promise<SavedCarousel[]> {
     console.error("loadLibrary", error);
     return [];
   }
-  return (data as Row[]).map(rowToItem);
+  return (data as Row[]).map(rowToItem).filter((i) => i.id !== "__brand__");
 }
 
 export async function upsertCarousel(item: SavedCarousel): Promise<SavedCarousel[]> {
@@ -67,6 +67,26 @@ export async function deleteCarousel(id: string): Promise<SavedCarousel[]> {
     .eq("id", id);
   if (error) console.error("deleteCarousel", error);
   return loadLibrary();
+}
+
+export async function saveBrandToCloud(brand: unknown): Promise<void> {
+  const space = getSpaceId();
+  await supabase.from("carousels").upsert(
+    { id: "__brand__", space_id: space, name: "__brand__", slides: [brand] as never },
+    { onConflict: "space_id,id" },
+  );
+}
+
+export async function loadBrandFromCloud(): Promise<unknown | null> {
+  const space = getSpaceId();
+  const { data } = await supabase
+    .from("carousels")
+    .select("slides")
+    .eq("space_id", space)
+    .eq("id", "__brand__")
+    .single();
+  if (!data || !Array.isArray(data.slides) || data.slides.length === 0) return null;
+  return data.slides[0];
 }
 
 export function newId() {

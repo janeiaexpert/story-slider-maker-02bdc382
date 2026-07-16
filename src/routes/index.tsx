@@ -41,6 +41,8 @@ import {
   loadLibrary,
   newId,
   upsertCarousel,
+  saveBrandToCloud,
+  loadBrandFromCloud,
 } from "@/lib/carousel-library";
 import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
 import {
@@ -204,6 +206,13 @@ function Index() {
     } else {
       setShowBrand(true);
     }
+    loadBrandFromCloud().then((cloud) => {
+      if (cloud) {
+        setBrand((prev) => ({ ...prev, ...(cloud as Partial<Brand>) }));
+        saveBrand({ ...loadBrand()!, ...(cloud as Partial<Brand>) });
+        setBrandReady(true);
+      }
+    });
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
@@ -221,6 +230,13 @@ function Index() {
   useEffect(() => {
     localStorage.setItem("carousel-compact-v1", compact ? "1" : "0");
   }, [compact]);
+
+  useEffect(() => {
+    if (brandReady) {
+      saveBrand(brand);
+      saveBrandToCloud(brand);
+    }
+  }, [brand, brandReady]);
 
   const refreshLibrary = async () => setLibrary(await loadLibrary());
 

@@ -569,7 +569,7 @@ function Index() {
                   title="Copiar link para sincronizar com outro dispositivo"
                 >
                   <Share2 className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{shareFlash ? "Link copiado!" : "Sincronizar"}</span>
+                  <span>{shareFlash ? "Copiado!" : "Sincronizar"}</span>
                 </button>
                 <button
                   onClick={exportAll}

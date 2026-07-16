@@ -388,21 +388,6 @@ function Index() {
   const savePng = async (dataUrl: string, filename: string) => {
     try {
       const blob = dataUrlToBlob(dataUrl);
-      const file = new File([blob], filename, { type: "image/png" });
-      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-      // iOS / Android: share sheet lets user save to Photos / Files reliably
-      if (nav.canShare && nav.canShare({ files: [file] })) {
-        try {
-          await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({
-            files: [file],
-            title: filename,
-          });
-          return;
-        } catch {
-          // user cancelled → fall through to download
-        }
-      }
-      // Desktop and fallback
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -413,10 +398,7 @@ function Index() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      // Last resort: open the image in a new tab (mobile long-press → Save Image)
-      const w = window.open();
-      if (w) w.document.write(`<img src="${dataUrl}" style="max-width:100%"/>`);
-      else console.error(e);
+      console.error("savePng", e);
     }
   };
 
@@ -436,13 +418,35 @@ function Index() {
     await new Promise((r) => requestAnimationFrame(() => r(null)));
   };
 
+  const capturePng = async (el: HTMLElement): Promise<string> => {
+    await waitForRender(el);
+    try {
+      return await toPng(el, { pixelRatio: 2, cacheBust: true });
+    } catch {
+      // Safari fallback: use toSvg then convert
+      const { toSvg } = await import("html-to-image");
+      const svg = await toSvg(el, { pixelRatio: 2, cacheBust: true });
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          c.width = img.naturalWidth;
+          c.height = img.naturalHeight;
+          c.getContext("2d")!.drawImage(img, 0, 0);
+          resolve(c.toDataURL("image/png"));
+        };
+        img.onerror = reject;
+        img.src = svg;
+      });
+    }
+  };
+
   const exportSlide = async (idx?: number) => {
     const i = idx ?? active;
     if (i !== active) setActive(i);
     await new Promise((r) => setTimeout(r, 300));
     if (!slideRef.current) return;
-    await waitForRender(slideRef.current);
-    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+    const dataUrl = await capturePng(slideRef.current);
     await savePng(dataUrl, `slide-${i + 1}.png`);
     setSaved(i);
     setTimeout(() => setSaved(null), 1500);
@@ -469,8 +473,7 @@ function Index() {
         setActive(i);
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
-        await waitForRender(slideRef.current);
-        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+        const dataUrl = await capturePng(slideRef.current);
         downloadPng(dataUrl, `slide-${i + 1}.png`);
         await new Promise((r) => setTimeout(r, 350));
       }
@@ -495,11 +498,7 @@ function Index() {
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 250));
         if (!slideRef.current) continue;
-        await waitForRender(slideRef.current);
-        const dataUrl = await toPng(slideRef.current, {
-          pixelRatio: 2,
-          cacheBust: true,
-        });
+        const dataUrl = await capturePng(slideRef.current);
         if (i > 0) pdf.addPage([pageW, pageH], "portrait");
         pdf.addImage(dataUrl, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
       }

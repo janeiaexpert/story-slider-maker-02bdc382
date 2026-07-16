@@ -35,15 +35,29 @@ function extractJson(text: string): unknown {
   const fenced = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
   const raw = fenced ? fenced[1] : cleaned;
   const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("Sem JSON na resposta");
+  if (start === -1) throw new Error("Sem JSON na resposta");
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let end = -1;
+
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
+  }
+
+  if (end === -1) throw new Error("Sem JSON na resposta");
   let jsonStr = raw.slice(start, end + 1);
-  jsonStr = jsonStr.replace(/[\x00-\x1f\x7f]/g, (ch) => {
-    if (ch === "\n") return "\\n";
-    if (ch === "\r") return "\\r";
-    if (ch === "\t") return "\\t";
-    return "";
-  });
+
+  jsonStr = jsonStr.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+  jsonStr = jsonStr.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+
   return JSON.parse(jsonStr);
 }
 

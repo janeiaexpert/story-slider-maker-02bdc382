@@ -203,14 +203,15 @@ function Index() {
     if (b) {
       setBrand(b);
       setBrandReady(true);
-    } else {
-      setShowBrand(true);
     }
     loadBrandFromCloud().then((cloud) => {
       if (cloud) {
-        setBrand((prev) => ({ ...prev, ...(cloud as Partial<Brand>) }));
-        saveBrand({ ...loadBrand()!, ...(cloud as Partial<Brand>) });
+        const merged = { ...(b ?? defaultBrand), ...(cloud as Partial<Brand>) };
+        setBrand(merged);
+        saveBrand(merged);
         setBrandReady(true);
+      } else if (!b) {
+        setShowBrand(true);
       }
     });
     const raw = localStorage.getItem(STORAGE_KEY);

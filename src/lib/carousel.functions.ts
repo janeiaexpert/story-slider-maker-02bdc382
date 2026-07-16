@@ -199,10 +199,10 @@ REGRAS:
 ${fwGuide}
 
 RETORNE APENAS JSON VÁLIDO no formato:
-{
-  "caption": "texto da legenda com quebras de linha reais",
-  "hashtags": ["#tag1","#tag2","#tag3","#tag4","#tag5"]
-}
+{"caption":"texto da legenda","hashtags":["#tag1","#tag2","#tag3","#tag4","#tag5"]}
+
+IMPORTANTE: O campo "caption" NÃO pode conter quebras de linha reais dentro do JSON. Use a sequência literal \\n (barra + n) para separar parágrafos. O JSON precisa ser parseável por um parser JSON padrão.
+
 Nada de texto fora do JSON.
 
 REGRAS DAS HASHTAGS:
@@ -238,9 +238,10 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
     try {
       parsed = CaptionSchema.parse(extractJson(text));
     } catch (parseErr) {
-      const preview = text.replace(/[\r\n]+/g, " ").slice(0, 300);
+      const hex = [...text.slice(0, 20)].map(c => c.charCodeAt(0).toString(16).padStart(2, "0")).join(" ");
+      const preview = text.replace(/[\r\n]+/g, " ").slice(0, 200);
       throw new Error(
-        `Parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)} | RAW: ${preview}`
+        `Parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)} | HEX: ${hex} | RAW: ${preview}`
       );
     }
 

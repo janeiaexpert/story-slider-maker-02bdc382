@@ -37,28 +37,59 @@ function extractJson(text: string): unknown {
   const start = raw.indexOf("{");
   if (start === -1) throw new Error("Sem JSON na resposta");
 
-  let depth = 0;
+  let result = "";
   let inString = false;
   let escape = false;
-  let end = -1;
+  let depth = 0;
+  let ended = false;
 
   for (let i = start; i < raw.length; i++) {
     const ch = raw[i];
-    if (escape) { escape = false; continue; }
-    if (ch === "\\") { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
+
+    if (escape) {
+      escape = false;
+      result += ch;
+      continue;
+    }
+
+    if (ch === "\\" && inString) {
+      escape = true;
+      result += ch;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (inString) {
+      if (ch === "\n" || ch === "\r" || ch === "\t") {
+        result += ch === "\n" ? "\\n" : ch === "\r" ? "\\r" : "\\t";
+      } else if (ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f) {
+        continue;
+      } else {
+        result += ch;
+      }
+      continue;
+    }
+
     if (ch === "{") depth++;
-    if (ch === "}") { depth--; if (depth === 0) { end = i; break; } }
+    if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        result += ch;
+        ended = true;
+        break;
+      }
+    }
+
+    result += ch;
   }
 
-  if (end === -1) throw new Error("Sem JSON na resposta");
-  let jsonStr = raw.slice(start, end + 1);
-
-  jsonStr = jsonStr.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
-  jsonStr = jsonStr.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
-
-  return JSON.parse(jsonStr);
+  if (!ended) throw new Error("Sem JSON na resposta");
+  return JSON.parse(result);
 }
 
 export const generateCarousel = createServerFn({ method: "POST" })

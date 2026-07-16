@@ -391,6 +391,13 @@ function Index() {
       if (isIOS) {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
+        const file = new File([blob], filename, { type: "image/png" });
+        const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean; share?: (d: ShareData) => Promise<void> };
+        if (nav.canShare && nav.canShare({ files: [file] }) && nav.share) {
+          await nav.share({ files: [file], title: filename });
+          return;
+        }
+        // Fallback: open in new tab
         const blobUrl = URL.createObjectURL(blob);
         const w = window.open(blobUrl);
         if (!w) {
@@ -471,6 +478,12 @@ function Index() {
     if (isIOS) {
       const res = await fetch(dataUrl);
       const blob = await res.blob();
+      const file = new File([blob], filename, { type: "image/png" });
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean; share?: (d: ShareData) => Promise<void> };
+      if (nav.canShare && nav.canShare({ files: [file] }) && nav.share) {
+        await nav.share({ files: [file], title: filename });
+        return;
+      }
       const blobUrl = URL.createObjectURL(blob);
       const w = window.open(blobUrl);
       if (!w) {

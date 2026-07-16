@@ -1845,7 +1845,7 @@ function ElementsDialog({
               title={def.name}
               className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 hover:border-amber-400/60 hover:bg-[#333]"
             >
-              <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg }} />
+              <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
             </div>
           ))}
         </div>

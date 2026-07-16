@@ -217,9 +217,18 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
       model,
       system,
       prompt: userPrompt,
+      temperature: 0.4,
     });
 
-    const parsed = CaptionSchema.parse(extractJson(text));
+    let parsed;
+    try {
+      parsed = CaptionSchema.parse(extractJson(text));
+    } catch (parseErr) {
+      const preview = text.replace(/[\r\n]+/g, " ").slice(0, 300);
+      throw new Error(
+        `Parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)} | RAW: ${preview}`
+      );
+    }
 
     const tags = parsed.hashtags
       .map((t) => {

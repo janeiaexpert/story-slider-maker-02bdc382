@@ -432,25 +432,33 @@ function Index() {
 
   const capturePng = async (el: HTMLElement): Promise<string> => {
     await waitForRender(el);
-    try {
-      return await toPng(el, { pixelRatio: 2, cacheBust: true });
-    } catch {
-      // Safari fallback: use toSvg then convert
-      const { toSvg } = await import("html-to-image");
-      const svg = await toSvg(el, { pixelRatio: 2, cacheBust: true });
-      return new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width = img.naturalWidth;
-          c.height = img.naturalHeight;
-          c.getContext("2d")!.drawImage(img, 0, 0);
-          resolve(c.toDataURL("image/png"));
-        };
-        img.onerror = reject;
-        img.src = svg;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      // Safari: convert <img> to background-image divs to avoid canvas taint
+      const imgs = el.querySelectorAll("img");
+      const originals: { el: HTMLImageElement; display: string; parent: Node; next: Node | null }[] = [];
+      imgs.forEach((img) => {
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = `position:absolute;inset:0;background-image:url(${img.src});background-size:cover;background-position:center;`;
+        const parent = img.parentNode!;
+        const next = img.nextSibling;
+        parent.insertBefore(wrapper, img);
+        originals.push({ el: img, display: img.style.display, parent, next });
+        img.style.display = "none";
       });
+      try {
+        const result = await toPng(el, { pixelRatio: 2, cacheBust: true });
+        return result;
+      } finally {
+        originals.forEach(({ el, parent, next }) => {
+          el.style.display = "";
+          parent.removeChild(el.previousSibling!);
+          if (next) parent.insertBefore(el, next);
+          else parent.appendChild(el);
+        });
+      }
     }
+    return toPng(el, { pixelRatio: 2, cacheBust: true });
   };
 
   const exportSlide = async (idx?: number) => {

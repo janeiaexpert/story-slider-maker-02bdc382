@@ -387,16 +387,13 @@ function Index() {
 
   const savePng = async (dataUrl: string, filename: string) => {
     try {
-      const blob = dataUrlToBlob(dataUrl);
-      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = dataUrl;
       a.download = filename;
       a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
       console.error("savePng", e);
     }
@@ -453,16 +450,13 @@ function Index() {
   };
 
   const downloadPng = (dataUrl: string, filename: string) => {
-    const blob = dataUrlToBlob(dataUrl);
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = dataUrl;
     a.download = filename;
     a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const exportAll = async () => {

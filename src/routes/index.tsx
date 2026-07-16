@@ -1086,6 +1086,12 @@ function Index() {
                       {a}
                     </button>
                   ))}
+                  <button
+                    onClick={() => setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })))}
+                    className="flex-1 rounded-md py-2 text-xs font-semibold bg-white/10 text-white/60 hover:bg-white/20"
+                  >
+                    Alinhar todos
+                  </button>
                 </div>
               </Field>
 

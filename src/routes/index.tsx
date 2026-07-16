@@ -1836,14 +1836,17 @@ function ElementsDialog({
 
         <div className="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:grid-cols-6">
           {elementsByCategory(cat).map((def) => (
-            <button
+            <div
               key={def.id}
+              role="button"
+              tabIndex={0}
               onClick={() => addElement(def)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }}
               title={def.name}
-              className="flex aspect-square items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 hover:border-amber-400/60 hover:bg-[#333]"
-              style={{ color: "white" }}
-              dangerouslySetInnerHTML={{ __html: def.svg }}
-            />
+              className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 hover:border-amber-400/60 hover:bg-[#333]"
+            >
+              <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg }} />
+            </div>
           ))}
         </div>
 

@@ -387,13 +387,22 @@ function Index() {
 
   const savePng = async (dataUrl: string, filename: string) => {
     try {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        const w = window.open("");
+        if (w) {
+          w.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;"/>`);
+          w.document.title = filename;
+        }
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     } catch (e) {
       console.error("savePng", e);
     }
@@ -450,13 +459,22 @@ function Index() {
   };
 
   const downloadPng = (dataUrl: string, filename: string) => {
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      const w = window.open("");
+      if (w) {
+        w.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;"/>`);
+        w.document.title = filename;
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const exportAll = async () => {

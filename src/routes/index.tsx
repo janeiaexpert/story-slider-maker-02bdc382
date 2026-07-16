@@ -42,7 +42,7 @@ import {
   newId,
   upsertCarousel,
 } from "@/lib/carousel-library";
-import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText } from "lucide-react";
+import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
 import {
   ELEMENTS,
   ELEMENT_CATEGORIES,
@@ -50,6 +50,7 @@ import {
   elementsByCategory,
   findElement,
 } from "@/lib/elements-library";
+import { getSpaceId, shareUrl } from "@/lib/space-id";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -185,6 +186,7 @@ function Index() {
   const [library, setLibrary] = useState<SavedCarousel[]>([]);
   const [showLibrary, setShowLibrary] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [shareFlash, setShareFlash] = useState(false);
   const [compact, setCompact] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
@@ -553,6 +555,21 @@ function Index() {
                   <span className="hidden sm:inline">
                     {savedFlash ? "Salvo!" : currentId ? "Atualizar" : "Salvar"}
                   </span>
+                </button>
+                <button
+                  onClick={() => {
+                    const url = shareUrl(getSpaceId());
+                    navigator.clipboard.writeText(url).then(() => {
+                      setShareFlash(true);
+                      setTimeout(() => setShareFlash(false), 2000);
+                    });
+                  }}
+                  disabled={exporting}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
+                  title="Copiar link para sincronizar com outro dispositivo"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">{shareFlash ? "Link copiado!" : "Sincronizar"}</span>
                 </button>
                 <button
                   onClick={exportAll}

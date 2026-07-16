@@ -420,28 +420,20 @@ function Index() {
     }
   };
 
-  const inlineImages = async (el: HTMLElement) => {
+  const waitForRender = async (el: HTMLElement) => {
+    await document.fonts.ready;
     const imgs = el.querySelectorAll("img");
-    const conversions: Promise<void>[] = [];
-    imgs.forEach((img) => {
-      if (img.src.startsWith("data:")) return;
-      const p = fetch(img.src)
-        .then((r) => r.blob())
-        .then(
-          (blob) =>
-            new Promise<void>((res) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                img.src = reader.result as string;
-                res();
-              };
-              reader.readAsDataURL(blob);
-            }),
-        )
-        .catch(() => {});
-      conversions.push(p);
-    });
-    await Promise.all(conversions);
+    await Promise.all(
+      [...imgs].map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      }),
+    );
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
   };
 
   const exportSlide = async (idx?: number) => {
@@ -449,7 +441,8 @@ function Index() {
     if (i !== active) setActive(i);
     await new Promise((r) => setTimeout(r, 300));
     if (!slideRef.current) return;
-    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, skipAutoScale: true });
+    await waitForRender(slideRef.current);
+    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
     await savePng(dataUrl, `slide-${i + 1}.png`);
     setSaved(i);
     setTimeout(() => setSaved(null), 1500);
@@ -474,12 +467,10 @@ function Index() {
       const prevActive = active;
       for (let i = 0; i < slides.length; i++) {
         setActive(i);
-        // Aguarda render: 2 frames + tick para layout/imagens estabilizarem (inclui o slide 1)
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
-        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, skipAutoScale: true });
+        await waitForRender(slideRef.current);
+        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
         downloadPng(dataUrl, `slide-${i + 1}.png`);
         await new Promise((r) => setTimeout(r, 350));
       }
@@ -504,10 +495,10 @@ function Index() {
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 250));
         if (!slideRef.current) continue;
+        await waitForRender(slideRef.current);
         const dataUrl = await toPng(slideRef.current, {
           pixelRatio: 2,
           cacheBust: true,
-          skipAutoScale: true,
         });
         if (i > 0) pdf.addPage([pageW, pageH], "portrait");
         pdf.addImage(dataUrl, "PNG", 0, 0, pageW, pageH, undefined, "FAST");

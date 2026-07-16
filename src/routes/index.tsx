@@ -44,7 +44,6 @@ import {
   saveBrandToCloud,
   loadBrandFromCloud,
 } from "@/lib/carousel-library";
-import { getSpaceId } from "@/lib/space-id";
 import { supabase } from "@/integrations/supabase/client";
 import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
 import {

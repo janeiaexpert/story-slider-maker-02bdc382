@@ -1840,7 +1840,8 @@ function ElementsDialog({
               key={def.id}
               onClick={() => addElement(def)}
               title={def.name}
-              className="flex aspect-square items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 text-white hover:border-amber-400/60 hover:bg-[#333]"
+              className="flex aspect-square items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 hover:border-amber-400/60 hover:bg-[#333]"
+              style={{ color: "white" }}
               dangerouslySetInnerHTML={{ __html: def.svg }}
             />
           ))}

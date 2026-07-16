@@ -1808,7 +1808,7 @@ function ElementsDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
-      <div className="w-full max-w-3xl rounded-2xl bg-[#161616] p-5 ring-1 ring-white/10">
+      <div className="w-full max-w-3xl rounded-2xl bg-[#232323] p-5 ring-1 ring-white/15">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">Elementos decorativos</h2>
           <button
@@ -1834,13 +1834,13 @@ function ElementsDialog({
           ))}
         </div>
 
-        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-white/5 p-2 sm:grid-cols-6">
+        <div className="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:grid-cols-6">
           {elementsByCategory(cat).map((def) => (
             <button
               key={def.id}
               onClick={() => addElement(def)}
               title={def.name}
-              className="flex aspect-square items-center justify-center rounded-md bg-white/10 p-2 text-white hover:bg-white/20"
+              className="flex aspect-square items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 text-white hover:border-amber-400/60 hover:bg-[#333]"
               dangerouslySetInnerHTML={{ __html: def.svg }}
             />
           ))}

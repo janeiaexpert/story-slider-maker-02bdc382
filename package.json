@@ -88,5 +88,19 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.3.1"
-  }
+  },
+  "version": "1.0.0",
+  "description": "",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janeiaexpert/story-slider-maker-02bdc382.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/janeiaexpert/story-slider-maker-02bdc382/issues"
+  },
+  "homepage": "https://github.com/janeiaexpert/story-slider-maker-02bdc382#readme"
 }

@@ -195,6 +195,7 @@ function Index() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
   const [showElements, setShowElements] = useState(false);
+  const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
 
   const generateFn = useServerFn(generateCarousel);
@@ -385,35 +386,6 @@ function Index() {
     return new Blob([arr], { type: mime });
   };
 
-  const savePng = async (dataUrl: string, filename: string) => {
-    try {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = filename;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-      } else {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = filename;
-        a.rel = "noopener";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    } catch (e) {
-      console.error("savePng", e);
-    }
-  };
-
   const waitForRender = async (el: HTMLElement) => {
     await document.fonts.ready;
     const imgs = el.querySelectorAll("img");
@@ -430,35 +402,42 @@ function Index() {
     await new Promise((r) => requestAnimationFrame(() => r(null)));
   };
 
+  const dpr = () => (/iPad|iPhone|iPod/.test(navigator.userAgent) ? 1 : 2);
+
   const capturePng = async (el: HTMLElement): Promise<string> => {
     await waitForRender(el);
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isIOS) {
-      // Safari: convert <img> to background-image divs to avoid canvas taint
-      const imgs = el.querySelectorAll("img");
-      const originals: { el: HTMLImageElement; display: string; parent: Node; next: Node | null }[] = [];
-      imgs.forEach((img) => {
-        const wrapper = document.createElement("div");
-        wrapper.style.cssText = `position:absolute;inset:0;background-image:url(${img.src});background-size:cover;background-position:center;`;
-        const parent = img.parentNode!;
-        const next = img.nextSibling;
-        parent.insertBefore(wrapper, img);
-        originals.push({ el: img, display: img.style.display, parent, next });
-        img.style.display = "none";
+      const { toSvg } = await import("html-to-image");
+      const svg = await toSvg(el, { pixelRatio: dpr(), cacheBust: true });
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement("canvas");
+          c.width = img.naturalWidth;
+          c.height = img.naturalHeight;
+          const ctx = c.getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+          resolve(c.toDataURL("image/png"));
+        };
+        img.onerror = () => reject(new Error("SVG render failed"));
+        img.src = svg;
       });
-      try {
-        const result = await toPng(el, { pixelRatio: 2, cacheBust: true });
-        return result;
-      } finally {
-        originals.forEach(({ el, parent, next }) => {
-          el.style.display = "";
-          parent.removeChild(el.previousSibling!);
-          if (next) parent.insertBefore(el, next);
-          else parent.appendChild(el);
-        });
-      }
     }
     return toPng(el, { pixelRatio: 2, cacheBust: true });
+  };
+
+  const downloadBlob = async (dataUrl: string, filename: string) => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
   };
 
   const exportSlide = async (idx?: number) => {
@@ -466,50 +445,46 @@ function Index() {
     if (i !== active) setActive(i);
     await new Promise((r) => setTimeout(r, 300));
     if (!slideRef.current) return;
-    const dataUrl = await capturePng(slideRef.current);
-    await savePng(dataUrl, `slide-${i + 1}.png`);
-    setSaved(i);
-    setTimeout(() => setSaved(null), 1500);
-  };
-
-  const downloadPng = async (dataUrl: string, filename: string) => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
-    } else {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    try {
+      const dataUrl = await capturePng(slideRef.current);
+      if (!dataUrl || dataUrl === "data:,") throw new Error("capture empty");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        setExportImages([dataUrl]);
+      } else {
+        await downloadBlob(dataUrl, `slide-${i + 1}.png`);
+      }
+      setSaved(i);
+      setTimeout(() => setSaved(null), 1500);
+    } catch (e) {
+      console.error("exportSlide", e);
+      setError("Erro ao exportar. Tente novamente.");
     }
-  };
+  };  
 
   const exportAll = async () => {
     setExporting(true);
     try {
       const prevActive = active;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const urls: string[] = [];
       for (let i = 0; i < slides.length; i++) {
         setActive(i);
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
         const dataUrl = await capturePng(slideRef.current);
-        await downloadPng(dataUrl, `slide-${i + 1}.png`);
-        await new Promise((r) => setTimeout(r, 350));
+        if (isIOS) {
+          urls.push(dataUrl);
+        } else {
+          await downloadBlob(dataUrl, `slide-${i + 1}.png`);
+          await new Promise((r) => setTimeout(r, 350));
+        }
       }
+      if (isIOS && urls.length > 0) setExportImages(urls);
       setActive(prevActive);
+    } catch (e) {
+      console.error("exportAll", e);
+      setError("Erro ao exportar. Tente novamente.");
     } finally {
       setExporting(false);
     }
@@ -660,7 +635,7 @@ function Index() {
                   }}
                   disabled={exporting}
                   className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
-                  title="Copiar link para sincronizar com outro dispositivo"
+                  title=            "Copiar link e sincronizar com outro dispositivo"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                   <span>{shareFlash ? "Copiado!" : "Sincronizar"}</span>
@@ -709,14 +684,14 @@ function Index() {
               <textarea
                 value={insight}
                 onChange={(e) => setInsight(e.target.value)}
-                placeholder="Cole aqui um insight, ideia solta, anotação, trecho de artigo, tweet ou raciocínio. A IA extrai o ângulo e monta o carrossel."
+                placeholder="            Cole aqui seu insight: uma ideia solta, anotação, trecho de artigo, tweet ou raciocínio. A IA extrai o ângulo e monta o carrossel."
                 rows={10}
                 className="w-full resize-y rounded-lg border border-white/10 bg-black/40 p-4 text-sm text-white outline-none focus:border-[color:var(--g)]"
                 style={{ ["--g" as any]: GOLD } as React.CSSProperties}
               />
               {!brandReady && (
                 <p className="mt-3 text-xs text-amber-400">
-                  Configure sua marca primeiro para a IA aplicar tom e contexto certos.
+                  Configure sua marca para a IA aplicar o tom e o visual certos.
                 </p>
               )}
               {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
@@ -735,7 +710,7 @@ function Index() {
                 )}
               </button>
               <p className="mt-3 text-center text-[11px] text-white/40">
-                A IA estrutura gancho, narrativa, virada e CTA aplicando seu branding.
+                A IA estrutura gancho, narrativa, virada e CTA aplicando o branding da sua marca.
               </p>
             </div>
           </div>
@@ -1391,8 +1366,15 @@ function Index() {
       {showElements && (
         <ElementsDialog
           slide={s}
+          bgColor={BG}
           onChange={(patch: Partial<Slide>) => update(patch)}
           onClose={() => setShowElements(false)}
+        />
+      )}
+      {exportImages && (
+        <ExportDialog
+          images={exportImages}
+          onClose={() => setExportImages(null)}
         />
       )}
     </div>
@@ -1416,7 +1398,7 @@ function BrandDialog({
       <div className="w-full max-w-3xl rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10 sm:p-8">
         <h2 className="mb-1 text-lg font-bold">Sua marca</h2>
         <p className="mb-5 text-xs text-white/50">
-          A IA usa essas informações para escrever no seu tom e aplicar seu visual.
+          A IA usa essas informações para escrever no tom da sua marca e aplicar o visual.
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -1587,7 +1569,7 @@ function LibraryDialog({
           <div>
             <h2 className="text-lg font-bold">Biblioteca de carrosséis</h2>
             <p className="text-xs text-white/50">
-              Seus carrosséis salvos ficam aqui — abra a qualquer hora para exportar.
+              Seus carrosséis salvos ficam aqui — acesse qualquer um para exportar ou editar.
             </p>
           </div>
           <button
@@ -1599,7 +1581,7 @@ function LibraryDialog({
         </div>
         {items.length === 0 ? (
           <div className="rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-white/40">
-            Nenhum carrossel salvo ainda. Gere um e clique em "Salvar".
+            Nenhum carrossel salvo ainda. Gere um e clique em "Salvar" para guardar.
           </div>
         ) : (
           <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
@@ -1814,7 +1796,7 @@ function CaptionDialog({
         </div>
 
         <p className="mb-3 text-xs text-white/60">
-          Gera a legenda usando só o que está nos slides — sem inventar dados.
+          Gera a legenda com base no conteúdo dos slides — sem inventar dados.
           Inclui 5 hashtags relevantes ao tema.
         </p>
 
@@ -1889,10 +1871,12 @@ function CaptionDialog({
 
 function ElementsDialog({
   slide,
+  bgColor,
   onChange,
   onClose,
 }: {
   slide: Slide;
+  bgColor: string;
   onChange: (patch: Partial<Slide>) => void;
   onClose: () => void;
 }) {
@@ -1929,181 +1913,253 @@ function ElementsDialog({
     if (selectedId === id) setSelectedId(null);
   };
 
+  const nudge = (dx: number, dy: number) => {
+    if (!selected) return;
+    updateEl({
+      x: Math.max(0, Math.min(100, selected.x + dx)),
+      y: Math.max(0, Math.min(100, selected.y + dy)),
+    });
+  };
+
+  const handlePreviewClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!selected) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    updateEl({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+  };
+
+  const renderEl = (el: SlideElement) => {
+    const def = findElement(el.svgId);
+    if (!def) return null;
+    return (
+      <div
+        key={el.id}
+        className="pointer-events-none absolute"
+        style={{
+          left: `${el.x}%`,
+          top: `${el.y}%`,
+          width: `${18 * el.scale}%`,
+          aspectRatio: "1 / 1",
+          transform: `translate(-50%, -50%) rotate(${el.rotation}deg)`,
+          opacity: el.opacity,
+          color: el.color,
+        }}
+        dangerouslySetInnerHTML={{ __html: def.svg }}
+      />
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
-      <div className="w-full max-w-3xl rounded-2xl bg-[#232323] p-5 ring-1 ring-white/15">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Elementos decorativos</h2>
+      <div className="flex w-full max-w-4xl flex-col gap-4 sm:flex-row">
+        {/* Mini card preview */}
+        <div className="mx-auto w-full max-w-[200px] shrink-0 sm:max-w-[220px]">
+          <div
+            onClick={handlePreviewClick}
+            className="relative w-full cursor-crosshair overflow-hidden rounded-xl ring-1 ring-white/20"
+            style={{ aspectRatio: "1080 / 1350", background: bgColor }}
+          >
+            {elements.map(renderEl)}
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/70 whitespace-nowrap">
+              Clique para posicionar
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex min-w-0 flex-1 flex-col rounded-2xl bg-[#232323] p-5 ring-1 ring-white/15">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Elementos decorativos</h2>
+            <button onClick={onClose} className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10" aria-label="Fechar">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {ELEMENT_CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setCat(c.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid max-h-40 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:grid-cols-6">
+            {elementsByCategory(cat).map((def) => (
+              <div
+                key={def.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => addElement(def)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }}
+                title={def.name}
+                className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-2 hover:border-amber-400/60 hover:bg-[#333]"
+              >
+                <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3">
+            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
+              Neste slide · {elements.length}
+            </div>
+            {elements.length === 0 && (
+              <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>
+            )}
+            {elements.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {elements.map((el) => {
+                  const def = findElement(el.svgId);
+                  if (!def) return null;
+                  const isSel = el.id === selectedId;
+                  return (
+                    <div key={el.id} className={`relative flex flex-col items-center rounded-md border p-1 ${isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5"}`}>
+                      <button
+                        onClick={() => setSelectedId(el.id)}
+                        className="flex h-10 w-10 items-center justify-center"
+                        style={{ color: el.color }}
+                        dangerouslySetInnerHTML={{ __html: def.svg }}
+                      />
+                      <button
+                        onClick={() => removeEl(el.id)}
+                        className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white"
+                        aria-label="Remover"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {selected && (
+            <div className="mt-3 space-y-3 rounded-lg bg-black/30 p-3">
+              <div>
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                  Posição · {Math.round(selected.x)}% / {Math.round(selected.y)}%
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <div className="grid grid-cols-3 gap-1">
+                    <div></div>
+                    <button onClick={() => nudge(0, -5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Cima"><ArrowUp className="h-3.5 w-3.5" /></button>
+                    <div></div>
+                    <button onClick={() => nudge(-5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Esquerda"><ArrowLeft className="h-3.5 w-3.5" /></button>
+                    <div className="flex items-center justify-center rounded bg-white/5 p-1.5">
+                      <span className="text-[10px] text-white/40">5%</span>
+                    </div>
+                    <button onClick={() => nudge(5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Direita"><ArrowRight className="h-3.5 w-3.5" /></button>
+                    <div></div>
+                    <button onClick={() => nudge(0, 5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Baixo"><ArrowDown className="h-3.5 w-3.5" /></button>
+                    <div></div>
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-center gap-2">
+                  <button onClick={() => nudge(-1, 0)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">-1%</button>
+                  <button onClick={() => nudge(1, 0)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">+1%</button>
+                  <button onClick={() => nudge(0, -1)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">-1% Y</button>
+                  <button onClick={() => nudge(0, 1)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">+1% Y</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                    Tamanho · {Math.round(selected.scale * 100)}%
+                  </div>
+                  <input type="range" min={0.2} max={2.5} step={0.05} value={selected.scale} onChange={(e) => updateEl({ scale: Number(e.target.value) })} className="w-full accent-white" />
+                </label>
+                <label className="block">
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                    Rotação · {Math.round(selected.rotation)}°
+                  </div>
+                  <input type="range" min={-180} max={180} value={selected.rotation} onChange={(e) => updateEl({ rotation: Number(e.target.value) })} className="w-full accent-white" />
+                </label>
+                <label className="block">
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
+                    Opacidade · {Math.round(selected.opacity * 100)}%
+                  </div>
+                  <input type="range" min={0.1} max={1} step={0.05} value={selected.opacity} onChange={(e) => updateEl({ opacity: Number(e.target.value) })} className="w-full accent-white" />
+                </label>
+                <label className="block">
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">Cor</div>
+                  <input type="color" value={selected.color} onChange={(e) => updateEl({ color: e.target.value })} className="h-8 w-full cursor-pointer rounded bg-transparent" />
+                </label>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 flex justify-end">
+            <button onClick={onClose} className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black">
+              Concluir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExportDialog({ images, onClose }: { images: string[]; onClose: () => void }) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const [idx, setIdx] = useState(0);
+  const count = images.length;
+  const img = images[idx];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="flex w-full max-w-md flex-col items-center gap-4">
+        <div className="flex items-center justify-between w-full">
+          <h2 className="text-base font-bold text-white">
+            {count > 1 ? `Slide ${idx + 1} de ${count}` : "Seu card"}
+          </h2>
           <button
             onClick={onClose}
-            className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10"
+            className="rounded-md bg-white/10 p-1.5 text-white/60 hover:bg-white/20"
             aria-label="Fechar"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {ELEMENT_CATEGORIES.map((c) => (
+        <div className="w-full overflow-hidden rounded-xl ring-1 ring-white/20">
+          <img src={img} alt="card" className="w-full h-auto block" />
+        </div>
+
+        <p className="text-center text-sm text-white/70">
+          {isIOS
+            ? "Pressione e segure a imagem acima para salvar na galeria"
+            : "Clique com o botão direito e escolha 'Salvar imagem como'"}
+        </p>
+
+        {count > 1 && (
+          <div className="flex gap-3">
             <button
-              key={c.key}
-              onClick={() => setCat(c.key)}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
-                cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"
-              }`}
+              disabled={idx === 0}
+              onClick={() => setIdx((p) => p - 1)}
+              className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30"
             >
-              {c.label}
+              Anterior
             </button>
-          ))}
-        </div>
-
-        <div className="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:grid-cols-6">
-          {elementsByCategory(cat).map((def) => (
-            <div
-              key={def.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => addElement(def)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }}
-              title={def.name}
-              className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-3 hover:border-amber-400/60 hover:bg-[#333]"
+            <button
+              disabled={idx === count - 1}
+              onClick={() => setIdx((p) => p + 1)}
+              className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30"
             >
-              <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-2 text-[11px] tracking-wider uppercase text-white/50">
-            Neste slide · {elements.length}
-          </div>
-          {elements.length === 0 && (
-            <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>
-          )}
-          {elements.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {elements.map((el) => {
-                const def = findElement(el.svgId);
-                if (!def) return null;
-                const isSel = el.id === selectedId;
-                return (
-                  <div
-                    key={el.id}
-                    className={`relative flex flex-col items-center rounded-md border p-1 ${
-                      isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5"
-                    }`}
-                  >
-                    <button
-                      onClick={() => setSelectedId(el.id)}
-                      className="flex h-10 w-10 items-center justify-center"
-                      style={{ color: el.color }}
-                      dangerouslySetInnerHTML={{ __html: def.svg }}
-                    />
-                    <button
-                      onClick={() => removeEl(el.id)}
-                      className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white"
-                      aria-label="Remover"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {selected && (
-          <div className="mt-4 space-y-3 rounded-lg bg-black/30 p-3">
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  X · {Math.round(selected.x)}%
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={selected.x}
-                  onChange={(e) => updateEl({ x: Number(e.target.value) })}
-                  className="w-full accent-white"
-                />
-              </label>
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  Y · {Math.round(selected.y)}%
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={selected.y}
-                  onChange={(e) => updateEl({ y: Number(e.target.value) })}
-                  className="w-full accent-white"
-                />
-              </label>
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  Tamanho · {Math.round(selected.scale * 100)}%
-                </div>
-                <input
-                  type="range"
-                  min={0.2}
-                  max={2.5}
-                  step={0.05}
-                  value={selected.scale}
-                  onChange={(e) => updateEl({ scale: Number(e.target.value) })}
-                  className="w-full accent-white"
-                />
-              </label>
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  Rotação · {Math.round(selected.rotation)}°
-                </div>
-                <input
-                  type="range"
-                  min={-180}
-                  max={180}
-                  value={selected.rotation}
-                  onChange={(e) => updateEl({ rotation: Number(e.target.value) })}
-                  className="w-full accent-white"
-                />
-              </label>
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  Opacidade · {Math.round(selected.opacity * 100)}%
-                </div>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={selected.opacity}
-                  onChange={(e) => updateEl({ opacity: Number(e.target.value) })}
-                  className="w-full accent-white"
-                />
-              </label>
-              <label className="block">
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">Cor</div>
-                <input
-                  type="color"
-                  value={selected.color}
-                  onChange={(e) => updateEl({ color: e.target.value })}
-                  className="h-8 w-full cursor-pointer rounded bg-transparent"
-                />
-              </label>
-            </div>
+              Próximo
+            </button>
           </div>
         )}
 
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black"
-          >
-            Concluir
-          </button>
-        </div>
+        <button onClick={onClose} className="rounded-md bg-white px-6 py-2 text-sm font-bold text-black">
+          Fechar
+        </button>
       </div>
     </div>
   );

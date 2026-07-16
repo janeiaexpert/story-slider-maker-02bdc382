@@ -251,7 +251,9 @@ REGRAS DAS HASHTAGS:
 CARROSSEL (use apenas isto como fonte):
 ${slidesDump}
 
-Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
+Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.
+
+Variação ${Math.random().toString(36).slice(2, 6)} — não repita o estilo de legendas anteriores.`;
 
     const CaptionSchema = z.object({
       caption: z.string().min(1),
@@ -262,7 +264,7 @@ Gere a legenda no framework ${fw} seguindo as regras. Retorne apenas o JSON.`;
       model,
       system,
       prompt: userPrompt,
-      temperature: 0.4,
+      temperature: 0.8,
     });
 
     let parsed;

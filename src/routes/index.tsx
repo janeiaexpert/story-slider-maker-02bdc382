@@ -1834,13 +1834,13 @@ function ElementsDialog({
           ))}
         </div>
 
-        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-black/30 p-2 sm:grid-cols-6">
+        <div className="grid max-h-56 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-white/5 p-2 sm:grid-cols-6">
           {elementsByCategory(cat).map((def) => (
             <button
               key={def.id}
               onClick={() => addElement(def)}
               title={def.name}
-              className="flex aspect-square items-center justify-center rounded-md bg-white/5 p-2 text-white/80 hover:bg-white/15"
+              className="flex aspect-square items-center justify-center rounded-md bg-white/10 p-2 text-white hover:bg-white/20"
               dangerouslySetInnerHTML={{ __html: def.svg }}
             />
           ))}

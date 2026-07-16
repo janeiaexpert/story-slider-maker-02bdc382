@@ -174,6 +174,7 @@ function Index() {
   const [brand, setBrand] = useState<Brand>(defaultBrand);
   const [brandReady, setBrandReady] = useState(false);
   const [showBrand, setShowBrand] = useState(false);
+  const [alignFlash, setAlignFlash] = useState(false);
   const [showStyles, setShowStyles] = useState(false);
   const [view, setView] = useState<"insight" | "editor">("insight");
   const [insight, setInsight] = useState("");
@@ -1087,10 +1088,16 @@ function Index() {
                     </button>
                   ))}
                   <button
-                    onClick={() => setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })))}
-                    className="flex-1 rounded-md py-2 text-xs font-semibold bg-white/10 text-white/60 hover:bg-white/20"
+                    onClick={() => {
+                      setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })));
+                      setAlignFlash(true);
+                      setTimeout(() => setAlignFlash(false), 800);
+                    }}
+                    className={`flex-1 rounded-md py-2 text-xs font-semibold transition-all duration-200 ${
+                      alignFlash ? "bg-green-500 text-white" : "bg-white/10 text-white/60 hover:bg-white/20"
+                    }`}
                   >
-                    Alinhar todos
+                    {alignFlash ? "✓ Pronto!" : "Alinhar todos"}
                   </button>
                 </div>
               </Field>

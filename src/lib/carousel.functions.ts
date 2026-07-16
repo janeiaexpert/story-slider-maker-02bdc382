@@ -55,8 +55,8 @@ function extractJson(text: string): unknown {
   if (end === -1) throw new Error("Sem JSON na resposta");
   let jsonStr = raw.slice(start, end + 1);
 
-  jsonStr = jsonStr.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
   jsonStr = jsonStr.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t");
+  jsonStr = jsonStr.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
 
   return JSON.parse(jsonStr);
 }

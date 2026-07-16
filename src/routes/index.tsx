@@ -389,11 +389,19 @@ function Index() {
     try {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       if (isIOS) {
-        const w = window.open("");
-        if (w) {
-          w.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;"/>`);
-          w.document.title = filename;
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const w = window.open(blobUrl);
+        if (!w) {
+          const a = document.createElement("a");
+          a.href = blobUrl;
+          a.target = "_blank";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
         }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
       } else {
         const a = document.createElement("a");
         a.href = dataUrl;
@@ -458,14 +466,22 @@ function Index() {
     setTimeout(() => setSaved(null), 1500);
   };
 
-  const downloadPng = (dataUrl: string, filename: string) => {
+  const downloadPng = async (dataUrl: string, filename: string) => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if (isIOS) {
-      const w = window.open("");
-      if (w) {
-        w.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;"/>`);
-        w.document.title = filename;
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const w = window.open(blobUrl);
+      if (!w) {
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
     } else {
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -486,7 +502,7 @@ function Index() {
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
         const dataUrl = await capturePng(slideRef.current);
-        downloadPng(dataUrl, `slide-${i + 1}.png`);
+        await downloadPng(dataUrl, `slide-${i + 1}.png`);
         await new Promise((r) => setTimeout(r, 350));
       }
       setActive(prevActive);

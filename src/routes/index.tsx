@@ -425,7 +425,7 @@ function Index() {
     if (i !== active) setActive(i);
     await new Promise((r) => setTimeout(r, 80));
     if (!slideRef.current) return;
-    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+    const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, imageRenderOrigin: "*" });
     await savePng(dataUrl, `slide-${i + 1}.png`);
     setSaved(i);
     setTimeout(() => setSaved(null), 1500);
@@ -455,7 +455,7 @@ function Index() {
         await new Promise((r) => requestAnimationFrame(() => r(null)));
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
-        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true });
+        const dataUrl = await toPng(slideRef.current, { pixelRatio: 2, cacheBust: true, imageRenderOrigin: "*" });
         downloadPng(dataUrl, `slide-${i + 1}.png`);
         await new Promise((r) => setTimeout(r, 350));
       }
@@ -483,6 +483,7 @@ function Index() {
         const dataUrl = await toPng(slideRef.current, {
           pixelRatio: 2,
           cacheBust: true,
+          imageRenderOrigin: "*",
         });
         if (i > 0) pdf.addPage([pageW, pageH], "portrait");
         pdf.addImage(dataUrl, "PNG", 0, 0, pageW, pageH, undefined, "FAST");
@@ -754,11 +755,12 @@ function Index() {
                       return (
                         <>
                           {/* Camada de imagem */}
-                          {hasImg && !split && (
-                            <img
-                              src={s.image!}
-                              alt=""
-                              className="absolute inset-0 h-full w-full object-cover"
+                           {hasImg && !split && (
+                             <img
+                               src={s.image!}
+                               alt=""
+                               crossOrigin="anonymous"
+                               className="absolute inset-0 h-full w-full object-cover"
                               style={{ objectPosition: objPos }}
                             />
                           )}
@@ -772,10 +774,11 @@ function Index() {
                             <div
                               className={`absolute inset-y-0 w-1/2 ${imageSide === "left" ? "left-0" : "right-0"}`}
                             >
-                              <img
-                                src={s.image!}
-                                alt=""
-                                className="h-full w-full object-cover"
+                               <img
+                                 src={s.image!}
+                                 alt=""
+                                 crossOrigin="anonymous"
+                                 className="h-full w-full object-cover"
                                 style={{ objectPosition: objPos }}
                               />
                             </div>

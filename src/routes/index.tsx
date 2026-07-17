@@ -1954,23 +1954,24 @@ function ElementsDialog({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl sm:flex-row sm:overflow-visible">
         {/* Mini card preview — mobile: compacto no topo, desktop: lateral */}
-        <div className="flex shrink-0 items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 sm:max-w-[260px]">
+        <div className="flex shrink-0 items-center justify-center bg-[#111] p-4 sm:p-6 sm:max-w-[260px]">
           <div
             onClick={handlePreviewClick}
             className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg ring-1 ring-white/20 sm:max-w-[220px]"
             style={{ aspectRatio: "1080 / 1350", background: bgColor }}
           >
             {slide.image && (
-              <img
-                src={slide.image}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ objectPosition: `center ${slide.imagePos === "top" ? "0%" : slide.imagePos === "bottom" ? "100%" : "50%"}` }}
-                crossOrigin="anonymous"
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${slide.image})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: `center ${slide.imagePos === "top" ? "0%" : slide.imagePos === "bottom" ? "100%" : "50%"}`,
+                }}
               />
             )}
             {slide.image && (
-              <div className="absolute inset-0" style={{ background: gradientFor(slide.gradient, slide.gradientIntensity) }} />
+              <div className="absolute inset-0 opacity-50" style={{ background: gradientFor(slide.gradient, slide.gradientIntensity) }} />
             )}
             {elements.map(renderEl)}
             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/70 whitespace-nowrap">

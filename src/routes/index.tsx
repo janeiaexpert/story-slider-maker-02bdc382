@@ -1960,6 +1960,17 @@ function ElementsDialog({
             className="relative w-full cursor-crosshair overflow-hidden rounded-xl ring-1 ring-white/20"
             style={{ aspectRatio: "1080 / 1350", background: bgColor }}
           >
+            {slide.image && (
+              <img
+                src={slide.image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ objectPosition: `center ${slide.imagePos === "top" ? "0%" : slide.imagePos === "bottom" ? "100%" : "50%"}` }}
+              />
+            )}
+            {slide.image && (
+              <div className="absolute inset-0" style={{ background: gradientFor(slide.gradient, slide.gradientIntensity) }} />
+            )}
             {elements.map(renderEl)}
             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/70 whitespace-nowrap">
               Clique para posicionar

@@ -1951,13 +1951,13 @@ function ElementsDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:items-center">
-      <div className="flex w-full max-w-4xl flex-col gap-4 sm:flex-row">
-        {/* Mini card preview */}
-        <div className="mx-auto w-full max-w-[200px] shrink-0 sm:max-w-[220px]">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl sm:flex-row sm:overflow-visible">
+        {/* Mini card preview — mobile: compacto no topo, desktop: lateral */}
+        <div className="flex shrink-0 items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 sm:max-w-[260px]">
           <div
             onClick={handlePreviewClick}
-            className="relative w-full cursor-crosshair overflow-hidden rounded-xl ring-1 ring-white/20"
+            className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg ring-1 ring-white/20 sm:max-w-[220px]"
             style={{ aspectRatio: "1080 / 1350", background: bgColor }}
           >
             {slide.image && (
@@ -1966,6 +1966,7 @@ function ElementsDialog({
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover"
                 style={{ objectPosition: `center ${slide.imagePos === "top" ? "0%" : slide.imagePos === "bottom" ? "100%" : "50%"}` }}
+                crossOrigin="anonymous"
               />
             )}
             {slide.image && (
@@ -1979,9 +1980,9 @@ function ElementsDialog({
         </div>
 
         {/* Controls */}
-        <div className="flex min-w-0 flex-1 flex-col rounded-2xl bg-[#232323] p-5 ring-1 ring-white/15">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold">Elementos decorativos</h2>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold sm:text-lg">Elementos decorativos</h2>
             <button onClick={onClose} className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10" aria-label="Fechar">
               <X className="h-4 w-4" />
             </button>
@@ -1999,7 +2000,7 @@ function ElementsDialog({
             ))}
           </div>
 
-          <div className="grid max-h-40 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:grid-cols-6">
+          <div className="grid max-h-32 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:max-h-40 sm:grid-cols-6">
             {elementsByCategory(cat).map((def) => (
               <div
                 key={def.id}
@@ -2106,7 +2107,7 @@ function ElementsDialog({
             </div>
           )}
 
-          <div className="mt-4 flex justify-end">
+          <div className="sticky bottom-0 mt-4 flex justify-end bg-[#232323] pt-2 pb-1 sm:bg-transparent sm:static">
             <button onClick={onClose} className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black">
               Concluir
             </button>

@@ -1960,48 +1960,15 @@ function ElementsDialog({
         <div className="flex shrink-0 items-center justify-center p-4 sm:p-6 sm:max-w-[260px]">
           <div
             onClick={handlePreviewClick}
-            className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg ring-1 ring-white/20 sm:max-w-[220px]"
-            style={{ aspectRatio: "1080 / 1350", background: bgColor }}
+            className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg sm:max-w-[220px]"
+            style={{
+              aspectRatio: "1080 / 1350",
+              background: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              boxShadow: "0 0 0 1px rgba(255,255,255,0.15)",
+            }}
           >
-            {slide.image && (
-              <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `url(${slide.image})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: `center ${slide.imagePos === "top" ? "0%" : slide.imagePos === "bottom" ? "100%" : "50%"}`,
-                }}
-              />
-            )}
-            {slide.image && (
-              <div className="absolute inset-0 opacity-50" style={{ background: gradientFor(slide.gradient, slide.gradientIntensity) }} />
-            )}
-            {/* Simplified text layout for positioning reference */}
-            <div
-              className="absolute inset-0 flex flex-col px-3 pt-6 pb-16 text-left"
-              style={{
-                justifyContent: (slide.align ?? "bottom") === "top" ? "flex-start" : slide.align === "center" ? "center" : "flex-end",
-                color: "white",
-              }}
-            >
-              {slide.kicker && (
-                <div className="mb-0.5 text-[6px] font-bold uppercase tracking-widest" style={{ color: slide.kickerColor ?? primaryColor }}>
-                  {slide.kicker}
-                </div>
-              )}
-              {slide.title && (
-                <div className="text-[10px] font-bold leading-tight">
-                  {slide.title.replace(/\*\*/g, "").split("\n").map((line, i) => (
-                    <div key={i}>{line}</div>
-                  ))}
-                </div>
-              )}
-              {slide.subtitle && (
-                <div className="mt-0.5 text-[7px] text-white/60 leading-snug">
-                  {slide.subtitle}
-                </div>
-              )}
-            </div>
             {elements.map(renderEl)}
           </div>
         </div>

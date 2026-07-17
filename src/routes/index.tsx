@@ -1367,6 +1367,7 @@ function Index() {
         <ElementsDialog
           slide={s}
           bgColor={BG}
+          primaryColor={GOLD}
           onChange={(patch: Partial<Slide>) => update(patch)}
           onClose={() => setShowElements(false)}
         />
@@ -1872,11 +1873,13 @@ function CaptionDialog({
 function ElementsDialog({
   slide,
   bgColor,
+  primaryColor,
   onChange,
   onClose,
 }: {
   slide: Slide;
   bgColor: string;
+  primaryColor: string;
   onChange: (patch: Partial<Slide>) => void;
   onClose: () => void;
 }) {
@@ -1954,7 +1957,7 @@ function ElementsDialog({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl sm:flex-row sm:overflow-visible">
         {/* Mini card preview — mobile: compacto no topo, desktop: lateral */}
-        <div className="flex shrink-0 items-center justify-center bg-[#111] p-4 sm:p-6 sm:max-w-[260px]">
+        <div className="flex shrink-0 items-center justify-center p-4 sm:p-6 sm:max-w-[260px]">
           <div
             onClick={handlePreviewClick}
             className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg ring-1 ring-white/20 sm:max-w-[220px]"
@@ -1973,10 +1976,33 @@ function ElementsDialog({
             {slide.image && (
               <div className="absolute inset-0 opacity-50" style={{ background: gradientFor(slide.gradient, slide.gradientIntensity) }} />
             )}
-            {elements.map(renderEl)}
-            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-[10px] text-white/70 whitespace-nowrap">
-              Clique para posicionar
+            {/* Simplified text layout for positioning reference */}
+            <div
+              className="absolute inset-0 flex flex-col px-3 pt-6 pb-16 text-left"
+              style={{
+                justifyContent: (slide.align ?? "bottom") === "top" ? "flex-start" : slide.align === "center" ? "center" : "flex-end",
+                color: "white",
+              }}
+            >
+              {slide.kicker && (
+                <div className="mb-0.5 text-[6px] font-bold uppercase tracking-widest" style={{ color: slide.kickerColor ?? primaryColor }}>
+                  {slide.kicker}
+                </div>
+              )}
+              {slide.title && (
+                <div className="text-[10px] font-bold leading-tight">
+                  {slide.title.replace(/\*\*/g, "").split("\n").map((line, i) => (
+                    <div key={i}>{line}</div>
+                  ))}
+                </div>
+              )}
+              {slide.subtitle && (
+                <div className="mt-0.5 text-[7px] text-white/60 leading-snug">
+                  {slide.subtitle}
+                </div>
+              )}
             </div>
+            {elements.map(renderEl)}
           </div>
         </div>
 

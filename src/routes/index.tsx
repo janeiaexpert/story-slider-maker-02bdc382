@@ -49,8 +49,8 @@ import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Shar
 import {
   ELEMENTS,
   ELEMENT_CATEGORIES,
-  type ElementDef,
   elementsByCategory,
+  type ElementDef,
   findElement,
 } from "@/lib/elements-library";
 import { getSpaceId, shareUrl } from "@/lib/space-id";
@@ -194,6 +194,7 @@ function Index() {
   const [compact, setCompact] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
+
   const [showElements, setShowElements] = useState(false);
   const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
@@ -323,7 +324,23 @@ function Index() {
 
   const onImage = (file: File) => {
     const reader = new FileReader();
-    reader.onload = () => update({ image: reader.result as string });
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const max = 1080;
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        if (w > max) { h = (h / w) * max; w = max; }
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        update({ image: c.toDataURL("image/jpeg", 0.85) });
+      };
+      img.onerror = () => update({ image: dataUrl });
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -391,53 +408,49 @@ function Index() {
     const imgs = el.querySelectorAll("img");
     await Promise.all(
       [...imgs].map((img) => {
-        if (img.complete) return Promise.resolve();
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
+          setTimeout(resolve, 5000);
         });
       }),
     );
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => setTimeout(r, 200));
   };
-
-  const dpr = () => (/iPad|iPhone|iPod/.test(navigator.userAgent) ? 1 : 2);
 
   const capturePng = async (el: HTMLElement): Promise<string> => {
     await waitForRender(el);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      const { toSvg } = await import("html-to-image");
-      const svg = await toSvg(el, { pixelRatio: dpr(), cacheBust: true });
-      return new Promise<string>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const c = document.createElement("canvas");
-          c.width = img.naturalWidth;
-          c.height = img.naturalHeight;
-          const ctx = c.getContext("2d")!;
-          ctx.drawImage(img, 0, 0);
-          resolve(c.toDataURL("image/png"));
-        };
-        img.onerror = () => reject(new Error("SVG render failed"));
-        img.src = svg;
+    try {
+      return await toPng(el, {
+        pixelRatio: 2,
+        useCORS: true,
+        cacheBust: true,
       });
+    } catch (e) {
+      console.warn("toPng failed", e);
     }
-    return toPng(el, { pixelRatio: 2, cacheBust: true });
+    const { toCanvas } = await import("html-to-image");
+    const canvas = await toCanvas(el, {
+      pixelRatio: 2,
+      useCORS: true,
+      cacheBust: true,
+    });
+    return canvas.toDataURL("image/png");
   };
 
-  const downloadBlob = async (dataUrl: string, filename: string) => {
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
+  const baixarPng = async (dataUrl: string, filename: string) => {
+    const blob = await (await fetch(dataUrl)).blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = blobUrl;
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   const exportSlide = async (idx?: number) => {
@@ -448,39 +461,28 @@ function Index() {
     try {
       const dataUrl = await capturePng(slideRef.current);
       if (!dataUrl || dataUrl === "data:,") throw new Error("capture empty");
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        setExportImages([dataUrl]);
-      } else {
-        await downloadBlob(dataUrl, `slide-${i + 1}.png`);
-      }
+      setExportImages([dataUrl]);
       setSaved(i);
       setTimeout(() => setSaved(null), 1500);
     } catch (e) {
       console.error("exportSlide", e);
       setError("Erro ao exportar. Tente novamente.");
     }
-  };  
+  };
 
   const exportAll = async () => {
     setExporting(true);
     try {
       const prevActive = active;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const urls: string[] = [];
       for (let i = 0; i < slides.length; i++) {
         setActive(i);
         await new Promise((r) => setTimeout(r, 300));
         if (!slideRef.current) continue;
         const dataUrl = await capturePng(slideRef.current);
-        if (isIOS) {
-          urls.push(dataUrl);
-        } else {
-          await downloadBlob(dataUrl, `slide-${i + 1}.png`);
-          await new Promise((r) => setTimeout(r, 350));
-        }
+        urls.push(dataUrl);
       }
-      if (isIOS && urls.length > 0) setExportImages(urls);
+      setExportImages(urls);
       setActive(prevActive);
     } catch (e) {
       console.error("exportAll", e);
@@ -1093,8 +1095,16 @@ function Index() {
                     onChange={(e) => update({ author: e.target.value })}
                     className={inputCls}
                   />
-                </Field>
-              </div>
+              </Field>
+
+              <Field label={`Elementos decorativos${s.elements?.length ? ` · ${s.elements.length}` : ""}`}>
+                <button
+                  onClick={() => setShowElements(true)}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white/5 py-2 text-xs font-semibold text-white/80 hover:bg-white/10"
+                >
+                  <Shapes className="h-3.5 w-3.5" /> Abrir biblioteca
+                </button>
+              </Field>
 
               <Field label="Alinhamento">
                 <div className="flex gap-2">
@@ -1304,14 +1314,7 @@ function Index() {
                 )}
               </Field>
 
-              <Field label={`Elementos decorativos${s.elements?.length ? ` · ${s.elements.length}` : ""}`}>
-                <button
-                  onClick={() => setShowElements(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white/5 py-2 text-xs font-semibold text-white/80 hover:bg-white/10"
-                >
-                  <Shapes className="h-3.5 w-3.5" /> Abrir biblioteca
-                </button>
-                </Field>
+
               </div>
             </aside>
           </div>
@@ -1372,6 +1375,7 @@ function Index() {
           onClose={() => setShowElements(false)}
         />
       )}
+
       {exportImages && (
         <ExportDialog
           images={exportImages}
@@ -1870,6 +1874,7 @@ function CaptionDialog({
   );
 }
 
+
 function ElementsDialog({
   slide,
   bgColor,
@@ -1890,7 +1895,7 @@ function ElementsDialog({
 
   const addElement = (def: ElementDef) => {
     const el: SlideElement = {
-      id: `el_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      id: el_ + Date.now() + _ + Math.random().toString(36).slice(2, 6),
       svgId: def.id,
       x: 80,
       y: 20,
@@ -1924,99 +1929,33 @@ function ElementsDialog({
     });
   };
 
-  const handlePreviewClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!selected) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-    updateEl({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
-  };
-
-  const renderEl = (el: SlideElement) => {
-    const def = findElement(el.svgId);
-    if (!def) return null;
-    return (
-      <div
-        key={el.id}
-        className="pointer-events-none absolute"
-        style={{
-          left: `${el.x}%`,
-          top: `${el.y}%`,
-          width: `${18 * el.scale}%`,
-          aspectRatio: "1 / 1",
-          transform: `translate(-50%, -50%) rotate(${el.rotation}deg)`,
-          opacity: el.opacity,
-          color: el.color,
-        }}
-        dangerouslySetInnerHTML={{ __html: def.svg }}
-      />
-    );
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl sm:flex-row sm:overflow-visible">
-        {/* Mini card preview — mobile: compacto no topo, desktop: lateral */}
-        <div className="flex shrink-0 items-center justify-center p-4 sm:p-6 sm:max-w-[260px]">
-          <div
-            onClick={handlePreviewClick}
-            className="relative w-full max-w-[180px] cursor-crosshair overflow-hidden rounded-lg sm:max-w-[220px]"
-            style={{
-              aspectRatio: "1080 / 1350",
-              background: "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              boxShadow: "0 0 0 1px rgba(255,255,255,0.15)",
-            }}
-          >
-            {elements.map(renderEl)}
-          </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-end sm:justify-end sm:p-4" style={{ pointerEvents: "none" }}>
+      <div className="pointer-events-auto flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl">
+        <div className="flex items-center justify-between p-4 pb-2">
+          <h2 className="text-base font-bold">Elementos decorativos</h2>
+          <button onClick={onClose} className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10" aria-label="Fechar">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-
-        {/* Controls */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold sm:text-lg">Elementos decorativos</h2>
-            <button onClick={onClose} className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10" aria-label="Fechar">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4">
           <div className="mb-3 flex flex-wrap gap-1.5">
             {ELEMENT_CATEGORIES.map((c) => (
-              <button
-                key={c.key}
-                onClick={() => setCat(c.key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold ${cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
-              >
+              <button key={c.key} onClick={() => setCat(c.key)} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10")}>
                 {c.label}
               </button>
             ))}
           </div>
-
           <div className="grid max-h-32 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:max-h-40 sm:grid-cols-6">
             {elementsByCategory(cat).map((def) => (
-              <div
-                key={def.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => addElement(def)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }}
-                title={def.name}
-                className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-2 hover:border-amber-400/60 hover:bg-[#333]"
-              >
+              <div key={def.id} role="button" tabIndex={0} onClick={() => addElement(def)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }} title={def.name} className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-2 hover:border-amber-400/60 hover:bg-[#333]">
                 <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
               </div>
             ))}
           </div>
-
           <div className="mt-3">
-            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
-              Neste slide · {elements.length}
-            </div>
-            {elements.length === 0 && (
-              <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>
-            )}
+            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">{"Neste slide � " + elements.length}</div>
+            {elements.length === 0 && <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>}
             {elements.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {elements.map((el) => {
@@ -2024,45 +1963,29 @@ function ElementsDialog({
                   if (!def) return null;
                   const isSel = el.id === selectedId;
                   return (
-                    <div key={el.id} className={`relative flex flex-col items-center rounded-md border p-1 ${isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5"}`}>
-                      <button
-                        onClick={() => setSelectedId(el.id)}
-                        className="flex h-10 w-10 items-center justify-center"
-                        style={{ color: el.color }}
-                        dangerouslySetInnerHTML={{ __html: def.svg }}
-                      />
-                      <button
-                        onClick={() => removeEl(el.id)}
-                        className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white"
-                        aria-label="Remover"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                    <div key={el.id} className={"relative flex flex-col items-center rounded-md border p-1 " + (isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5")}>
+                      <button onClick={() => setSelectedId(el.id)} className="flex h-10 w-10 items-center justify-center" style={{ color: el.color }} dangerouslySetInnerHTML={{ __html: def.svg }} />
+                      <button onClick={() => removeEl(el.id)} className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white" aria-label="Remover"><X className="h-3 w-3" /></button>
                     </div>
                   );
                 })}
               </div>
             )}
           </div>
-
           {selected && (
             <div className="mt-3 space-y-3 rounded-lg bg-black/30 p-3">
               <div>
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                  Posição · {Math.round(selected.x)}% / {Math.round(selected.y)}%
-                </div>
+                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Posi��o � " + Math.round(selected.x) + "% / " + Math.round(selected.y) + "%"}</div>
                 <div className="flex items-center justify-center gap-1">
                   <div className="grid grid-cols-3 gap-1">
                     <div></div>
-                    <button onClick={() => nudge(0, -5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Cima"><ArrowUp className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => nudge(0, -5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowUp className="h-3.5 w-3.5" /></button>
                     <div></div>
-                    <button onClick={() => nudge(-5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Esquerda"><ArrowLeft className="h-3.5 w-3.5" /></button>
-                    <div className="flex items-center justify-center rounded bg-white/5 p-1.5">
-                      <span className="text-[10px] text-white/40">5%</span>
-                    </div>
-                    <button onClick={() => nudge(5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Direita"><ArrowRight className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => nudge(-5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowLeft className="h-3.5 w-3.5" /></button>
+                    <div className="flex items-center justify-center rounded bg-white/5 p-1.5"><span className="text-[10px] text-white/40">5%</span></div>
+                    <button onClick={() => nudge(5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowRight className="h-3.5 w-3.5" /></button>
                     <div></div>
-                    <button onClick={() => nudge(0, 5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20" title="Baixo"><ArrowDown className="h-3.5 w-3.5" /></button>
+                    <button onClick={() => nudge(0, 5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowDown className="h-3.5 w-3.5" /></button>
                     <div></div>
                   </div>
                 </div>
@@ -2073,24 +1996,17 @@ function ElementsDialog({
                   <button onClick={() => nudge(0, 1)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">+1% Y</button>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                    Tamanho · {Math.round(selected.scale * 100)}%
-                  </div>
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Tamanho � " + Math.round(selected.scale * 100) + "%"}</div>
                   <input type="range" min={0.2} max={2.5} step={0.05} value={selected.scale} onChange={(e) => updateEl({ scale: Number(e.target.value) })} className="w-full accent-white" />
                 </label>
                 <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                    Rotação · {Math.round(selected.rotation)}°
-                  </div>
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Rota��o � " + Math.round(selected.rotation) + "�"}</div>
                   <input type="range" min={-180} max={180} value={selected.rotation} onChange={(e) => updateEl({ rotation: Number(e.target.value) })} className="w-full accent-white" />
                 </label>
                 <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">
-                    Opacidade · {Math.round(selected.opacity * 100)}%
-                  </div>
+                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Opacidade � " + Math.round(selected.opacity * 100) + "%"}</div>
                   <input type="range" min={0.1} max={1} step={0.05} value={selected.opacity} onChange={(e) => updateEl({ opacity: Number(e.target.value) })} className="w-full accent-white" />
                 </label>
                 <label className="block">
@@ -2100,23 +2016,56 @@ function ElementsDialog({
               </div>
             </div>
           )}
-
-          <div className="sticky bottom-0 mt-4 flex justify-end bg-[#232323] pt-2 pb-1 sm:bg-transparent sm:static">
-            <button onClick={onClose} className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black">
-              Concluir
-            </button>
-          </div>
+        </div>
+        <div className="flex justify-end border-t border-white/10 p-4 pt-2">
+          <button onClick={onClose} className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black">Concluir</button>
         </div>
       </div>
     </div>
   );
 }
-
 function ExportDialog({ images, onClose }: { images: string[]; onClose: () => void }) {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const [idx, setIdx] = useState(0);
   const count = images.length;
   const img = images[idx];
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let activeUrl: string | null = null;
+    fetch(img)
+      .then((r) => r.blob())
+      .then((b) => {
+        activeUrl = URL.createObjectURL(b);
+        setBlobUrl(activeUrl);
+      })
+      .catch(() => setBlobUrl(null));
+    return () => {
+      if (activeUrl) URL.revokeObjectURL(activeUrl);
+    };
+  }, [img]);
+
+  const compartilhar = async () => {
+    const res = await fetch(img);
+    const blob = await res.blob();
+    const file = new File([blob], `slide-${idx + 1}.png`, { type: "image/png" });
+    if (navigator.share) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch { }
+    }
+    baixar();
+  };
+
+  const baixar = () => {
+    if (!blobUrl) return;
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `slide-${idx + 1}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
@@ -2125,45 +2074,42 @@ function ExportDialog({ images, onClose }: { images: string[]; onClose: () => vo
           <h2 className="text-base font-bold text-white">
             {count > 1 ? `Slide ${idx + 1} de ${count}` : "Seu card"}
           </h2>
-          <button
-            onClick={onClose}
-            className="rounded-md bg-white/10 p-1.5 text-white/60 hover:bg-white/20"
-            aria-label="Fechar"
-          >
+          <button onClick={onClose} className="rounded-md bg-white/10 p-1.5 text-white/60 hover:bg-white/20" aria-label="Fechar">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="w-full overflow-hidden rounded-xl ring-1 ring-white/20">
-          <img src={img} alt="card" className="w-full h-auto block" />
+          <img src={blobUrl || img} alt="card" className="w-full h-auto block" />
         </div>
 
-        <p className="text-center text-sm text-white/70">
-          {isIOS
-            ? "Pressione e segure a imagem acima para salvar na galeria"
-            : "Clique com o botão direito e escolha 'Salvar imagem como'"}
+        <div className="flex gap-3">
+          <button onClick={compartilhar} className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2 text-sm font-bold text-black">
+            <Share2 className="h-4 w-4" /> Compartilhar
+          </button>
+          {blobUrl && (
+            <button onClick={baixar} className="inline-flex items-center gap-2 rounded-md bg-white/10 px-5 py-2 text-sm font-bold text-white">
+              <Download className="h-4 w-4" /> Baixar
+            </button>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-white/50">
+          Use "Compartilhar" para salvar nas Fotos ou Arquivos do iPhone
         </p>
 
         {count > 1 && (
           <div className="flex gap-3">
-            <button
-              disabled={idx === 0}
-              onClick={() => setIdx((p) => p - 1)}
-              className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30"
-            >
+            <button disabled={idx === 0} onClick={() => setIdx((p) => p - 1)} className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30">
               Anterior
             </button>
-            <button
-              disabled={idx === count - 1}
-              onClick={() => setIdx((p) => p + 1)}
-              className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30"
-            >
+            <button disabled={idx === count - 1} onClick={() => setIdx((p) => p + 1)} className="rounded-md bg-white/10 px-4 py-2 text-sm font-bold text-white disabled:opacity-30">
               Próximo
             </button>
           </div>
         )}
 
-        <button onClick={onClose} className="rounded-md bg-white px-6 py-2 text-sm font-bold text-black">
+        <button onClick={onClose} className="rounded-md bg-white/10 px-6 py-2 text-sm font-bold text-white">
           Fechar
         </button>
       </div>

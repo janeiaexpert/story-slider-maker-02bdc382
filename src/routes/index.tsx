@@ -1978,7 +1978,7 @@ function ElementsDialog({
   onChange: (patch: Partial<Slide>) => void;
   onClose: () => void;
 }) {
-  const [cat, setCat] = useState<ElementDef["category"]>("negocios");
+  const [cat, setCat] = useState<ElementDef["category"]>("geometricos");
   const elements = slide.elements ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(elements[0]?.id ?? null);
   const selected = elements.find((e) => e.id === selectedId) ?? null;
@@ -1991,8 +1991,8 @@ function ElementsDialog({
       y: 20,
       scale: 1,
       rotation: 0,
-      opacity: 0.9,
-      color: "#c2a25b",
+      opacity: 0.7,
+      color: primaryColor,
     };
     const next = [...elements, el];
     onChange({ elements: next });
@@ -2011,104 +2011,180 @@ function ElementsDialog({
     if (selectedId === id) setSelectedId(null);
   };
 
-  const nudge = (dx: number, dy: number) => {
+  const duplicateEl = () => {
     if (!selected) return;
-    updateEl({
-      x: Math.max(0, Math.min(100, selected.x + dx)),
-      y: Math.max(0, Math.min(100, selected.y + dy)),
-    });
+    const el: SlideElement = {
+      ...selected,
+      id: el_ + Date.now() + _ + Math.random().toString(36).slice(2, 6),
+      x: Math.min(95, selected.x + 5),
+      y: Math.min(95, selected.y + 5),
+    };
+    onChange({ elements: [...elements, el] });
+    setSelectedId(el.id);
   };
+
+  const positionPresets = [
+    { label: "↖", x: 12, y: 12 },
+    { label: "↗", x: 88, y: 12 },
+    { label: "↙", x: 12, y: 88 },
+    { label: "↘", x: 88, y: 88 },
+    { label: "↖↗", x: 50, y: 12 },
+    { label: "↙↘", x: 50, y: 88 },
+    { label: "Centro", x: 50, y: 50 },
+  ];
+
+  const quickColors = [
+    { label: "Marca", color: primaryColor },
+    { label: "Branco", color: "#ffffff" },
+    { label: "Preto", color: "#000000" },
+    { label: "Dourado", color: "#c9a27a" },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-end sm:justify-end sm:p-4" style={{ pointerEvents: "none" }}>
-      <div className="pointer-events-auto flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl bg-[#232323] ring-1 ring-white/15 sm:rounded-2xl">
-        <div className="flex items-center justify-between p-4 pb-2">
-          <h2 className="text-base font-bold">Elementos decorativos</h2>
-          <button onClick={onClose} className="rounded-md bg-white/5 p-1.5 text-white/60 hover:bg-white/10" aria-label="Fechar">
+      <div className="pointer-events-auto flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl bg-[#1a1a1a] ring-1 ring-white/10 sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <h2 className="text-sm font-bold">Elementos decorativos</h2>
+          <button onClick={onClose} className="rounded-md bg-white/10 p-1.5 text-white/60 hover:bg-white/20" aria-label="Fechar">
             <X className="h-4 w-4" />
           </button>
         </div>
+
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-4">
-          <div className="mb-3 flex flex-wrap gap-1.5">
+          <div className="mb-3 mt-3 flex gap-1">
             {ELEMENT_CATEGORIES.map((c) => (
-              <button key={c.key} onClick={() => setCat(c.key)} className={"rounded-md px-3 py-1.5 text-xs font-semibold " + (cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/70 hover:bg-white/10")}>
+              <button key={c.key} onClick={() => setCat(c.key)} className={"flex-1 rounded-md py-2 text-xs font-semibold transition " + (cat === c.key ? "bg-white text-black" : "bg-white/5 text-white/60 hover:bg-white/10")}>
                 {c.label}
               </button>
             ))}
           </div>
-          <div className="grid max-h-32 grid-cols-4 gap-2 overflow-y-auto rounded-lg bg-[#1a1a1a] p-2 sm:max-h-40 sm:grid-cols-6">
+
+          <div className="grid grid-cols-3 gap-2 rounded-lg bg-[#232323] p-2">
             {elementsByCategory(cat).map((def) => (
-              <div key={def.id} role="button" tabIndex={0} onClick={() => addElement(def)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }} title={def.name} className="flex aspect-square cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-[#2a2a2a] p-2 hover:border-amber-400/60 hover:bg-[#333]">
-                <div style={{ color: "white", width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
+              <div
+                key={def.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => addElement(def)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") addElement(def); }}
+                title={def.name}
+                className="group flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-white/10 bg-[#2a2a2a] p-2 transition hover:border-white/30 hover:bg-[#333]"
+              >
+                <div className="h-8 w-8" style={{ color: "white" }} dangerouslySetInnerHTML={{ __html: def.svg.replace("<svg ", '<svg width="100%" height="100%" ') }} />
+                <span className="text-[9px] text-white/40 group-hover:text-white/60">{def.name}</span>
               </div>
             ))}
           </div>
-          <div className="mt-3">
-            <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">{"Neste slide � " + elements.length}</div>
-            {elements.length === 0 && <p className="text-xs text-white/40">Nenhum elemento. Clique acima para adicionar.</p>}
-            {elements.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+
+          {elements.length > 0 && (
+            <div className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-widest uppercase text-white/40">No slide · {elements.length}</span>
+                {selected && (
+                  <div className="flex gap-1">
+                    <button onClick={duplicateEl} className="rounded bg-white/5 px-2 py-1 text-[10px] text-white/60 hover:bg-white/10" title="Duplicar">
+                      Duplicar
+                    </button>
+                    <button onClick={() => removeEl(selected.id)} className="rounded bg-red-500/20 px-2 py-1 text-[10px] text-red-400 hover:bg-red-500/30" title="Remover">
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
                 {elements.map((el) => {
                   const def = findElement(el.svgId);
                   if (!def) return null;
                   const isSel = el.id === selectedId;
                   return (
-                    <div key={el.id} className={"relative flex flex-col items-center rounded-md border p-1 " + (isSel ? "border-white bg-white/10" : "border-white/10 bg-white/5")}>
-                      <button onClick={() => setSelectedId(el.id)} className="flex h-10 w-10 items-center justify-center" style={{ color: el.color }} dangerouslySetInnerHTML={{ __html: def.svg }} />
-                      <button onClick={() => removeEl(el.id)} className="absolute -top-1.5 -right-1.5 rounded-full bg-red-500 p-0.5 text-white" aria-label="Remover"><X className="h-3 w-3" /></button>
-                    </div>
+                    <button
+                      key={el.id}
+                      onClick={() => setSelectedId(isSel ? null : el.id)}
+                      className={"relative flex h-11 w-11 items-center justify-center rounded-lg border transition " + (isSel ? "border-white bg-white/15 ring-1 ring-white/30" : "border-white/10 bg-white/5 hover:border-white/25")}
+                      style={{ color: el.color }}
+                      title={def.name}
+                    >
+                      <div className="h-6 w-6" dangerouslySetInnerHTML={{ __html: def.svg }} />
+                    </button>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
           {selected && (
-            <div className="mt-3 space-y-3 rounded-lg bg-black/30 p-3">
+            <div className="mt-3 space-y-3 rounded-lg bg-[#232323] p-3">
               <div>
-                <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Posi��o � " + Math.round(selected.x) + "% / " + Math.round(selected.y) + "%"}</div>
-                <div className="flex items-center justify-center gap-1">
-                  <div className="grid grid-cols-3 gap-1">
-                    <div></div>
-                    <button onClick={() => nudge(0, -5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowUp className="h-3.5 w-3.5" /></button>
-                    <div></div>
-                    <button onClick={() => nudge(-5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowLeft className="h-3.5 w-3.5" /></button>
-                    <div className="flex items-center justify-center rounded bg-white/5 p-1.5"><span className="text-[10px] text-white/40">5%</span></div>
-                    <button onClick={() => nudge(5, 0)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowRight className="h-3.5 w-3.5" /></button>
-                    <div></div>
-                    <button onClick={() => nudge(0, 5)} className="rounded bg-white/10 p-1.5 text-white hover:bg-white/20"><ArrowDown className="h-3.5 w-3.5" /></button>
-                    <div></div>
-                  </div>
+                <div className="mb-2 text-[10px] font-bold tracking-widest uppercase text-white/40">Posição</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {positionPresets.map((p) => (
+                    <button
+                      key={p.label}
+                      onClick={() => updateEl({ x: p.x, y: p.y })}
+                      className={"flex h-8 min-w-[2.5rem] items-center justify-center rounded-md px-2 text-xs font-semibold transition " + (selected.x === p.x && selected.y === p.y ? "bg-white text-black" : "bg-white/5 text-white/60 hover:bg-white/10")}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="mt-2 flex justify-center gap-2">
-                  <button onClick={() => nudge(-1, 0)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">-1%</button>
-                  <button onClick={() => nudge(1, 0)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">+1%</button>
-                  <button onClick={() => nudge(0, -1)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">-1% Y</button>
-                  <button onClick={() => nudge(0, 1)} className="rounded bg-white/5 px-2 py-0.5 text-[10px] text-white/60 hover:bg-white/10">+1% Y</button>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] text-white/30">X</span>
+                  <input
+                    type="range" min={0} max={100} value={Math.round(selected.x)}
+                    onChange={(e) => updateEl({ x: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <span className="w-8 text-right text-[10px] text-white/50">{Math.round(selected.x)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-white/30">Y</span>
+                  <input
+                    type="range" min={0} max={100} value={Math.round(selected.y)}
+                    onChange={(e) => updateEl({ y: Number(e.target.value) })}
+                    className="flex-1 accent-white"
+                  />
+                  <span className="w-8 text-right text-[10px] text-white/50">{Math.round(selected.y)}%</span>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Tamanho � " + Math.round(selected.scale * 100) + "%"}</div>
+                  <div className="mb-1 text-[10px] font-bold tracking-widest uppercase text-white/40">Tamanho · {Math.round(selected.scale * 100)}%</div>
                   <input type="range" min={0.2} max={2.5} step={0.05} value={selected.scale} onChange={(e) => updateEl({ scale: Number(e.target.value) })} className="w-full accent-white" />
                 </label>
                 <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Rota��o � " + Math.round(selected.rotation) + "�"}</div>
+                  <div className="mb-1 text-[10px] font-bold tracking-widest uppercase text-white/40">Rotação · {Math.round(selected.rotation)}°</div>
                   <input type="range" min={-180} max={180} value={selected.rotation} onChange={(e) => updateEl({ rotation: Number(e.target.value) })} className="w-full accent-white" />
                 </label>
-                <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">{"Opacidade � " + Math.round(selected.opacity * 100) + "%"}</div>
-                  <input type="range" min={0.1} max={1} step={0.05} value={selected.opacity} onChange={(e) => updateEl({ opacity: Number(e.target.value) })} className="w-full accent-white" />
-                </label>
-                <label className="block">
-                  <div className="mb-1 text-[10px] tracking-wider uppercase text-white/50">Cor</div>
-                  <input type="color" value={selected.color} onChange={(e) => updateEl({ color: e.target.value })} className="h-8 w-full cursor-pointer rounded bg-transparent" />
-                </label>
+              </div>
+
+              <div>
+                <div className="mb-2 text-[10px] font-bold tracking-widest uppercase text-white/40">Opacidade · {Math.round(selected.opacity * 100)}%</div>
+                <input type="range" min={0.05} max={1} step={0.05} value={selected.opacity} onChange={(e) => updateEl({ opacity: Number(e.target.value) })} className="w-full accent-white" />
+              </div>
+
+              <div>
+                <div className="mb-2 text-[10px] font-bold tracking-widest uppercase text-white/40">Cor</div>
+                <div className="flex gap-1.5">
+                  {quickColors.map((c) => (
+                    <button
+                      key={c.label}
+                      onClick={() => updateEl({ color: c.color })}
+                      className={"flex h-8 flex-1 items-center justify-center rounded-md text-[10px] font-semibold transition " + (selected.color === c.color ? "ring-2 ring-white" : "hover:ring-1 hover:ring-white/30")}
+                      style={{ background: c.color === "#000000" ? "#333" : c.color, color: c.color === "#000000" ? "#fff" : c.color === "#ffffff" ? "#000" : "#000" }}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                  <input type="color" value={selected.color} onChange={(e) => updateEl({ color: e.target.value })} className="h-8 w-8 cursor-pointer rounded-md border-0 bg-transparent" />
+                </div>
               </div>
             </div>
           )}
         </div>
-        <div className="flex justify-end border-t border-white/10 p-4 pt-2">
-          <button onClick={onClose} className="rounded-md bg-white px-4 py-2 text-sm font-bold text-black">Concluir</button>
+
+        <div className="flex justify-end border-t border-white/10 p-3">
+          <button onClick={onClose} className="rounded-md bg-white px-5 py-2 text-sm font-bold text-black">Concluir</button>
         </div>
       </div>
     </div>

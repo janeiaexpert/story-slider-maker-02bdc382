@@ -91,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;700&family=Fraunces:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&family=Syne:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;500;700&family=Bebas+Neue&family=Barlow:wght@400;500;700&family=Archivo+Black&family=Hind:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Work+Sans:wght@400;500;700&family=Fraunces:wght@400;700;900&family=IBM+Plex+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&family=DM+Sans:wght@400;500;700&family=Syne:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;500;700&family=Bebas+Neue&family=Barlow:wght@400;500;700&family=Archivo+Black&family=Hind:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@400;700&display=swap",
       },
     ],
   }),

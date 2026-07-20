@@ -31,6 +31,8 @@ import {
   type DesignStyle,
   FONT_PAIRS,
   type FontPair,
+  TYPOGRAPHY_PRESETS,
+  COLOR_THEMES,
   defaultBrand,
   loadBrand,
   saveBrand,
@@ -194,6 +196,10 @@ function Index() {
   const [compact, setCompact] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
+
+  const [typography, setTypography] = useState("Médio");
+  const [colorTheme, setColorTheme] = useState("Bege");
+  const [textSizeScale, setTextSizeScale] = useState(100);
 
   const [showElements, setShowElements] = useState(false);
   const [exportImages, setExportImages] = useState<string[] | null>(null);
@@ -533,6 +539,12 @@ function Index() {
   const s = slides[active];
   const GOLD = brand.primaryColor;
   const BG = brand.bgColor;
+
+  const activeTypography = TYPOGRAPHY_PRESETS.find(t => t.name === typography) ?? TYPOGRAPHY_PRESETS[5];
+  const activeColorTheme = COLOR_THEMES.find(c => c.name === colorTheme);
+  const effectiveGold = activeColorTheme ? activeColorTheme.color : GOLD;
+  const effectiveTextScale = textSizeScale / 100;
+
   const alignClass =
     s.align === "top"
       ? "justify-start pt-16"
@@ -839,43 +851,48 @@ function Index() {
                               <div
                                 className="font-bold tracking-[0.28em]"
                                 style={{
-                                  color: s.kickerColor ?? GOLD,
-                                  fontSize: 11 * titleScale,
+                                  color: s.kickerColor ?? effectiveGold,
+                                  fontSize: 11 * titleScale * effectiveTextScale,
                                   fontFamily: bodyFont,
                                 }}
                               >
                                 {s.kicker}
                               </div>
                               <h2
-                                className="mt-3 whitespace-pre-line font-bold"
+                                className="mt-3 whitespace-pre-line"
                                 style={{
-                                  fontFamily: brand.fontFamily,
+                                  fontFamily: activeTypography.fontFamily,
+                                  fontWeight: activeTypography.headingWeight,
                                   color: s.titleColor ?? "#ffffff",
-                                  letterSpacing: "-0.01em",
+                                  letterSpacing: activeTypography.headingSpacing,
+                                  textTransform: activeTypography.headingTransform as "none" | "uppercase",
                                   wordSpacing: "normal",
-                                  fontSize: 28 * titleScale,
-                                  lineHeight: 1.1,
+                                  fontSize: 28 * titleScale * effectiveTextScale,
+                                  lineHeight: activeTypography.headingLineHeight,
                                 }}
                               >
-                                {renderRich(s.title, s.highlightColor ?? GOLD)}
+                                {renderRich(s.title, s.highlightColor ?? effectiveGold)}
                               </h2>
                               {s.subtitle && (
                                 <p
-                                  className="mt-3 leading-snug"
+                                  className="mt-3"
                                   style={{
                                     color: s.subtitleColor ?? "rgba(255,255,255,0.8)",
-                                    fontSize: 13 * subScale,
+                                    fontSize: 13 * subScale * effectiveTextScale,
                                     fontFamily: bodyFont,
+                                    fontWeight: activeTypography.bodyWeight,
+                                    letterSpacing: activeTypography.bodySpacing,
+                                    lineHeight: "1.4",
                                   }}
                                 >
-                                  {renderRich(s.subtitle, s.highlightColor ?? GOLD)}
+                                  {renderRich(s.subtitle, s.highlightColor ?? effectiveGold)}
                                 </p>
                               )}
                               {s.buttonText && s.buttonPosition === "inline" && (
                                 <div className="mt-5">
                                   <div
                                     className="w-full rounded-md py-3 text-center text-[13px] font-bold"
-                                    style={{ background: GOLD, color: "#111", fontFamily: bodyFont }}
+                                    style={{ background: effectiveGold, color: "#111", fontFamily: bodyFont }}
                                   >
                                     {s.buttonText}
                                   </div>
@@ -902,7 +919,7 @@ function Index() {
                             >
                               <div
                                 className="w-full rounded-md py-3 text-center text-[13px] font-bold"
-                                style={{ background: GOLD, color: "#111", fontFamily: bodyFont }}
+                                style={{ background: effectiveGold, color: "#111", fontFamily: bodyFont }}
                               >
                                 {s.buttonText}
                               </div>
@@ -931,7 +948,7 @@ function Index() {
                             <div
                               className="mt-2 h-[3px] w-full rounded-full"
                               style={{
-                                background: `linear-gradient(to right, ${GOLD} ${
+                                background: `linear-gradient(to right, ${effectiveGold} ${
                                   ((active + 1) / 8) * 100
                                 }%, rgba(255,255,255,0.15) ${((active + 1) / 8) * 100}%)`,
                               }}
@@ -1017,6 +1034,79 @@ function Index() {
                 </button>
               </div>
               <div className={editorOpen ? "" : "hidden md:block"}>
+
+              <div className="mb-4 rounded-lg border border-white/10 bg-white/5 p-3">
+                <div className="mb-2 text-[10px] font-bold tracking-widest uppercase text-white/50">Design</div>
+
+                <Field label="Tipografia">
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {TYPOGRAPHY_PRESETS.map((t) => (
+                      <button
+                        key={t.name}
+                        onClick={() => setTypography(t.name)}
+                        className={`rounded-md px-1.5 py-1.5 text-[10px] font-semibold transition ${
+                          typography === t.name
+                            ? "bg-white text-black"
+                            : "bg-white/5 text-white/70 hover:bg-white/10"
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                <Field label="Tema de cores">
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {COLOR_THEMES.map((c) => (
+                      <button
+                        key={c.name}
+                        onClick={() => setColorTheme(c.name)}
+                        className={`flex flex-col items-center gap-1 rounded-md px-1 py-1.5 transition ${
+                          colorTheme === c.name
+                            ? "bg-white/20 ring-1 ring-white/40"
+                            : "bg-white/5 hover:bg-white/10"
+                        }`}
+                        title={c.name}
+                      >
+                        <div
+                          className="h-4 w-4 rounded-full border border-white/20"
+                          style={{ background: c.color }}
+                        />
+                        <span className="text-[8px] leading-tight text-white/60">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => {
+                        const random = COLOR_THEMES[Math.floor(Math.random() * COLOR_THEMES.length)];
+                        setColorTheme(random.name);
+                      }}
+                      className="flex-1 rounded-md bg-white/5 py-1.5 text-[10px] font-semibold text-white/70 hover:bg-white/10"
+                    >
+                      🎲 Sortear
+                    </button>
+                    <button
+                      onClick={() => setColorTheme("Bege")}
+                      className="flex-1 rounded-md bg-white/5 py-1.5 text-[10px] font-semibold text-white/70 hover:bg-white/10"
+                    >
+                      ✕ Limpar
+                    </button>
+                  </div>
+                </Field>
+
+                <Field label={`Tamanho do texto · ${textSizeScale}%`}>
+                  <input
+                    type="range"
+                    min={50}
+                    max={130}
+                    value={textSizeScale}
+                    onChange={(e) => setTextSizeScale(Number(e.target.value))}
+                    className="w-full accent-white"
+                  />
+                </Field>
+              </div>
 
               <Field label="Kicker">
                 <input

@@ -129,6 +129,50 @@ export const FONT_PAIRS: FontPair[] = [
   },
 ];
 
+export type TypographyPreset = {
+  name: string;
+  fontFamily: string;
+  headingWeight: string;
+  bodyWeight: string;
+  headingSpacing: string;
+  bodySpacing: string;
+  headingTransform: string;
+  headingLineHeight: string;
+};
+
+export const TYPOGRAPHY_PRESETS: TypographyPreset[] = [
+  { name: "Clássica", fontFamily: 'Georgia, "Times New Roman", serif', headingWeight: "700", bodyWeight: "400", headingSpacing: "0", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.15" },
+  { name: "Moderna", fontFamily: '"Inter", system-ui, sans-serif', headingWeight: "700", bodyWeight: "400", headingSpacing: "-0.02em", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.1" },
+  { name: "Editorial", fontFamily: '"Instrument Serif", Georgia, serif', headingWeight: "400", bodyWeight: "400", headingSpacing: "0.02em", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.2" },
+  { name: "Handwritten", fontFamily: '"Caveat", cursive', headingWeight: "700", bodyWeight: "400", headingSpacing: "0", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.3" },
+  { name: "Bold", fontFamily: '"Bebas Neue", Impact, sans-serif', headingWeight: "400", bodyWeight: "500", headingSpacing: "0.05em", bodySpacing: "0", headingTransform: "uppercase", headingLineHeight: "1.05" },
+  { name: "Fina", fontFamily: '"Inter", system-ui, sans-serif', headingWeight: "300", bodyWeight: "300", headingSpacing: "0.05em", bodySpacing: "0.01em", headingTransform: "none", headingLineHeight: "1.2" },
+  { name: "Tech", fontFamily: '"JetBrains Mono", monospace', headingWeight: "700", bodyWeight: "400", headingSpacing: "0", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.2" },
+  { name: "Compacta", fontFamily: '"Space Grotesk", system-ui, sans-serif', headingWeight: "700", bodyWeight: "500", headingSpacing: "-0.02em", bodySpacing: "0", headingTransform: "none", headingLineHeight: "1.05" },
+  { name: "Aberta", fontFamily: '"DM Sans", system-ui, sans-serif', headingWeight: "500", bodyWeight: "400", headingSpacing: "0.03em", bodySpacing: "0.02em", headingTransform: "none", headingLineHeight: "1.3" },
+  { name: "Contraste", fontFamily: '"Fraunces", Georgia, serif', headingWeight: "900", bodyWeight: "300", headingSpacing: "-0.01em", bodySpacing: "0.01em", headingTransform: "none", headingLineHeight: "1.15" },
+];
+
+export type ColorTheme = {
+  name: string;
+  color: string;
+};
+
+export const COLOR_THEMES: ColorTheme[] = [
+  { name: "Marron", color: "#8b5a2b" },
+  { name: "Preto", color: "#ffffff" },
+  { name: "Bege", color: "#c9a27a" },
+  { name: "Azul", color: "#3b82f6" },
+  { name: "Roxo", color: "#8b5cf6" },
+  { name: "Verde", color: "#22c55e" },
+  { name: "Vermelho", color: "#ef4444" },
+  { name: "Laranja", color: "#f97316" },
+  { name: "Cinza", color: "#9ca3af" },
+  { name: "Verde Água", color: "#14b8a6" },
+  { name: "Rosa", color: "#ec4899" },
+  { name: "Azul Claro", color: "#38bdf8" },
+];
+
 const KEY = "carousel-brand-v1";
 
 export function loadBrand(): Brand | null {

@@ -180,6 +180,7 @@ function Index() {
   const [typography, setTypography] = useState("Médio");
   const [colorTheme, setColorTheme] = useState("Bege");
   const [textSizeScale, setTextSizeScale] = useState(100);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
@@ -329,6 +330,31 @@ function Index() {
     reader.readAsDataURL(file);
   };
 
+  const generateImageWithAI = async () => {
+    const slide = slides[active];
+    const parts = [slide.kicker, slide.title, slide.subtitle].filter(Boolean).join(". ");
+    const niche = brand.niche || "professional";
+    const prompt = `Professional ${niche} poster photo, ${parts}. Dark moody lighting, high quality editorial photography, cinematic, 4:5 aspect ratio, no text, no words, no letters, no watermarks`;
+    const encoded = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1350&nologo=true&seed=${Date.now()}`;
+    setGeneratingImage(true);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Falha ao gerar imagem");
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onload = () => {
+        update({ image: reader.result as string });
+        setGeneratingImage(false);
+      };
+      reader.readAsDataURL(blob);
+    } catch (e) {
+      console.error("generateImage", e);
+      setGeneratingImage(false);
+      setError("Erro ao gerar imagem. Tente novamente.");
+    }
+  };
+
   const handleGenerate = async () => {
     if (insight.trim().length < 10) {
       setError("Cole um insight com pelo menos 10 caracteres.");
@@ -393,17 +419,23 @@ function Index() {
     const imgs = el.querySelectorAll("img");
     await Promise.all(
       [...imgs].map((img) => {
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        if (img.complete && img.naturalWidth > 0) {
+          try { (img as HTMLImageElement).decode(); } catch {}
+          return Promise.resolve();
+        }
         return new Promise((resolve) => {
-          img.onload = resolve;
+          img.onload = () => {
+            try { (img as HTMLImageElement).decode().then(() => resolve(null)).catch(() => resolve(null)); } catch { resolve(null); }
+          };
           img.onerror = resolve;
-          setTimeout(resolve, 5000);
+          setTimeout(resolve, 8000);
         });
       }),
     );
     await new Promise((r) => requestAnimationFrame(() => r(null)));
     await new Promise((r) => requestAnimationFrame(() => r(null)));
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => setTimeout(r, 500));
   };
 
   const capturePng = async (el: HTMLElement): Promise<string> => {
@@ -441,7 +473,7 @@ function Index() {
   const exportSlide = async (idx?: number) => {
     const i = idx ?? active;
     if (i !== active) setActive(i);
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 600));
     if (!slideRef.current) return;
     try {
       const dataUrl = await capturePng(slideRef.current);
@@ -688,20 +720,32 @@ function Index() {
                 </p>
               )}
               {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
-              <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="mt-4 w-full rounded-lg py-3 text-sm font-bold disabled:opacity-50"
-                style={{ background: GOLD, color: "#111" }}
-              >
-                {loading ? (
-                  "Gerando carrossel…"
-                ) : (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <Sparkles className="h-4 w-4" /> Gerar carrossel
-                  </span>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !insight.trim()}
+                  className="flex-1 rounded-lg py-3 text-sm font-bold disabled:opacity-50"
+                  style={{ background: GOLD, color: "#111" }}
+                >
+                  {loading ? (
+                    "Gerando carrossel…"
+                  ) : (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Sparkles className="h-4 w-4" /> Gerar carrossel
+                    </span>
+                  )}
+                </button>
+                {insight.trim() && (
+                  <button
+                    onClick={() => setInsight("")}
+                    disabled={loading}
+                    className="rounded-lg bg-white/5 px-4 py-3 text-sm font-semibold text-white/60 hover:bg-white/10 disabled:opacity-50"
+                    title="Apagar ideia"
+                  >
+                    Limpar
+                  </button>
                 )}
-              </button>
+              </div>
               <p className="mt-3 text-center text-[11px] text-white/40">
                 A IA estrutura gancho, narrativa, virada e CTA aplicando o branding da sua marca.
               </p>
@@ -798,25 +842,25 @@ function Index() {
 
                           {/* Container do texto */}
                           <div
-                            className={`relative z-10 flex h-full flex-col ${
+                            className={`relative z-10 flex h-full flex-col overflow-hidden ${
                               split
-                                ? `w-1/2 px-6 ${imageSide === "left" ? "ml-auto" : "mr-auto"}`
+                                ? `w-1/2 px-5 ${imageSide === "left" ? "ml-auto" : "mr-auto"}`
                                 : "w-full px-7"
                             } ${s.buttonText && s.buttonPosition === "bottom" ? "pb-44" : "pb-20"} ${alignClass}`}
                           >
-                            <div>
+                            <div className="min-w-0">
                               <div
                                 className="font-bold tracking-[0.28em]"
                                 style={{
                                   color: s.kickerColor ?? effectiveGold,
-                                  fontSize: 11 * titleScale * effectiveTextScale,
+                                  fontSize: (split ? 9 : 11) * titleScale * effectiveTextScale,
                                   fontFamily: bodyFont,
                                 }}
                               >
                                 {s.kicker}
                               </div>
                               <h2
-                                className="mt-3 whitespace-pre-line"
+                                className="mt-3 whitespace-pre-line break-words"
                                 style={{
                                   fontFamily: activeTypography.fontFamily,
                                   fontWeight: activeTypography.headingWeight,
@@ -824,7 +868,9 @@ function Index() {
                                   letterSpacing: activeTypography.headingSpacing,
                                   textTransform: activeTypography.headingTransform as "none" | "uppercase",
                                   wordSpacing: "normal",
-                                  fontSize: 28 * titleScale * effectiveTextScale,
+                                  overflowWrap: "anywhere",
+                                  wordBreak: "break-word",
+                                  fontSize: (split ? 22 : 28) * titleScale * effectiveTextScale,
                                   lineHeight: activeTypography.headingLineHeight,
                                 }}
                               >
@@ -835,7 +881,7 @@ function Index() {
                                   className="mt-3"
                                   style={{
                                     color: s.subtitleColor ?? "rgba(255,255,255,0.8)",
-                                    fontSize: 13 * subScale * effectiveTextScale,
+                                    fontSize: (split ? 11 : 13) * subScale * effectiveTextScale,
                                     fontFamily: bodyFont,
                                     fontWeight: activeTypography.bodyWeight,
                                     letterSpacing: activeTypography.bodySpacing,
@@ -1226,15 +1272,34 @@ function Index() {
               </Field>
 
               <Field label="Foto de fundo">
-                <label className="block cursor-pointer rounded-md bg-white/5 px-3 py-2 text-center text-xs text-white/70 hover:bg-white/10">
-                  {s.image ? "Trocar foto" : "Enviar foto"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])}
-                  />
-                </label>
+                <div className="flex gap-2">
+                  <label className="block flex-1 cursor-pointer rounded-md bg-white/5 px-3 py-2 text-center text-xs text-white/70 hover:bg-white/10">
+                    {s.image ? "Trocar foto" : "Enviar foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])}
+                    />
+                  </label>
+                  <button
+                    onClick={generateImageWithAI}
+                    disabled={generatingImage}
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-white/5 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/10 disabled:opacity-50"
+                    title="Gerar imagem com IA gratuita"
+                  >
+                    {generatingImage ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        Gerando…
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3" /> Gerar com IA
+                      </span>
+                    )}
+                  </button>
+                </div>
                 {s.image && (
                   <button
                     onClick={() => update({ image: null })}

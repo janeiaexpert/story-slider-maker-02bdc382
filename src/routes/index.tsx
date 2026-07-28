@@ -775,10 +775,20 @@ function Index() {
                   >
                     <span className="text-[10px] font-bold text-white/50 w-4 text-center">{i + 1}</span>
                     <span
-                      className="flex-1 aspect-[1080/1350] rounded-sm overflow-hidden text-[7px] leading-tight px-1 py-1"
-                      style={{ background: BG, color: "white" }}
+                      className="flex-1 aspect-[1080/1350] relative overflow-hidden rounded-sm"
+                      style={{ background: BG }}
                     >
-                      <span className="line-clamp-3 opacity-80">{sl.title || sl.kicker}</span>
+                      {sl.image ? (
+                        <img
+                          src={sl.image}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full items-center px-1 py-1 text-[7px] leading-tight text-white/80">
+                          <span className="line-clamp-3 opacity-80">{sl.title || sl.kicker}</span>
+                        </span>
+                      )}
                     </span>
                   </button>
                 ))}

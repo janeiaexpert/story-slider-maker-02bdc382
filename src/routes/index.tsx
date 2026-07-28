@@ -829,7 +829,7 @@ function Index() {
                           )}
                           {hasImg && split && (
                             <div
-                              className={`absolute inset-y-0 w-1/2 ${imageSide === "left" ? "left-0" : "right-0"}`}
+                              className={`absolute inset-y-0 w-[55%] ${imageSide === "left" ? "left-0" : "right-0"}`}
                             >
                                <img
                                  src={s.image!}
@@ -844,7 +844,7 @@ function Index() {
                           <div
                             className={`relative z-10 flex h-full flex-col overflow-hidden ${
                               split
-                                ? `w-1/2 px-5 ${imageSide === "left" ? "ml-auto" : "mr-auto"}`
+                                ? `w-[45%] px-5 ${imageSide === "left" ? "ml-auto" : "mr-auto"}`
                                 : "w-full px-7"
                             } ${s.buttonText && s.buttonPosition === "bottom" ? "pb-44" : "pb-20"} ${alignClass}`}
                           >
@@ -916,7 +916,7 @@ function Index() {
                             <div
                               className={`absolute bottom-16 z-10 ${
                                 split
-                                  ? `w-1/2 px-6 ${imageSide === "left" ? "right-0" : "left-0"}`
+                                  ? `w-[45%] px-6 ${imageSide === "left" ? "right-0" : "left-0"}`
                                   : "right-0 left-0 px-7"
                               }`}
                             >

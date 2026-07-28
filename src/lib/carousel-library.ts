@@ -43,15 +43,36 @@ export async function loadLibrary(): Promise<SavedCarousel[]> {
   return (data as Row[]).map(rowToItem).filter((i) => i.id !== "__brand__");
 }
 
+function compressImageForStorage(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    if (!dataUrl.startsWith("data:image")) { resolve(dataUrl); return; }
+    const img = new Image();
+    img.onload = () => {
+      const max = 400;
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      if (w > max) { h = (h / w) * max; w = max; }
+      const c = document.createElement("canvas");
+      c.width = w;
+      c.height = h;
+      c.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL("image/jpeg", 0.5));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 export async function upsertCarousel(item: SavedCarousel): Promise<SavedCarousel[]> {
   const space = getSpaceId();
-  const slidesForCloud = (item.slides as Record<string, unknown>[]).map((s) => {
-    const copy = { ...s };
-    if (typeof copy.image === "string" && copy.image.startsWith("data:image")) {
-      copy.image = "";
-    }
-    return copy;
-  });
+  const slidesForCloud = await Promise.all(
+    (item.slides as Record<string, unknown>[]).map(async (s) => {
+      if (typeof s.image === "string" && s.image.startsWith("data:image")) {
+        return { ...s, image: await compressImageForStorage(s.image) };
+      }
+      return s;
+    }),
+  );
   const { error } = await supabase.from("carousels").upsert(
     {
       id: item.id,

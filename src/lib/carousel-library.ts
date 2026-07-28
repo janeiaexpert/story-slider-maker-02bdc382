@@ -45,16 +45,26 @@ export async function loadLibrary(): Promise<SavedCarousel[]> {
 
 export async function upsertCarousel(item: SavedCarousel): Promise<SavedCarousel[]> {
   const space = getSpaceId();
+  const slidesForCloud = (item.slides as Record<string, unknown>[]).map((s) => {
+    const copy = { ...s };
+    if (typeof copy.image === "string" && copy.image.startsWith("data:image")) {
+      copy.image = "";
+    }
+    return copy;
+  });
   const { error } = await supabase.from("carousels").upsert(
     {
       id: item.id,
       space_id: space,
       name: item.name,
-      slides: item.slides as never,
+      slides: slidesForCloud as never,
     },
     { onConflict: "space_id,id" },
   );
-  if (error) console.error("upsertCarousel", error);
+  if (error) {
+    console.error("upsertCarousel", error);
+    throw error;
+  }
   return loadLibrary();
 }
 

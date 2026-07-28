@@ -273,12 +273,18 @@ function Index() {
       updatedAt: now,
       slides,
     };
-    const next = await upsertCarousel(item);
-    setLibrary(next);
-    setCurrentId(id);
-    setCurrentName(name);
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 1500);
+    try {
+      const next = await upsertCarousel(item);
+      setLibrary(next);
+      setCurrentId(id);
+      setCurrentName(name);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1500);
+    } catch (e) {
+      console.error("handleSaveCarousel", e);
+      setError("Erro ao salvar. Verifique sua conexão.");
+      setTimeout(() => setError(null), 3000);
+    }
   };
 
   const handleLoadCarousel = (item: SavedCarousel) => {

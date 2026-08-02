@@ -494,16 +494,17 @@ function Index() {
   return (
     <div className={`min-h-screen text-white ${compact ? "text-[13px]" : ""}`} style={{ background: "#111" }}>
       <div className={`mx-auto max-w-7xl px-3 ${compact ? "py-3" : "px-4 py-6 lg:py-10"}`}>
-        <header className="mb-6 flex items-center justify-between gap-3">
-          <div>
+        <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <div className="text-xs tracking-[0.25em] uppercase" style={{ color: GOLD }}>
               Fábrica de Carrosséis
             </div>
-            <h1 className="text-xl font-semibold">
+            <h1 className="truncate text-lg font-semibold sm:text-xl">
               {view === "insight" ? "Cole um insight → IA gera o carrossel" : `${brand.handle} · 8 slides`}
             </h1>
           </div>
-          <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2">
+          <div className="-mx-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:justify-end sm:overflow-visible sm:px-0 sm:pb-0 sm:gap-2">
+
             <button
               onClick={() => setCompact((c) => !c)}
               title={compact ? "Modo normal" : "Modo compacto"}

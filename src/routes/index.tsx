@@ -40,7 +40,7 @@ import {
   saveBrandToCloud,
   loadBrandFromCloud,
 } from "@/lib/carousel-library";
-import { Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
+import { Minimize2, Maximize2, MessageSquareText, Share2, Undo2, Redo2 } from "lucide-react";
 import { getSpaceId, shareUrl } from "@/lib/space-id";
 
 export const Route = createFileRoute("/")({
@@ -201,6 +201,9 @@ function Index() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [showCaption, setShowCaption] = useState(false);
 
+  const [history, setHistory] = useState<Slide[][]>([blankSlides(defaultBrand)]);
+  const [historyIdx, setHistoryIdx] = useState(0);
+
   const [typography, setTypography] = useState("Médio");
   const [colorTheme, setColorTheme] = useState("Bege");
   const [textSizeScale, setTextSizeScale] = useState(100);
@@ -212,6 +215,25 @@ function Index() {
   const slideRef = useRef<HTMLDivElement>(null);
 
   const generateFn = useServerFn(generateCarousel);
+
+  function pushHistory(newSlides: Slide[]) {
+    setHistory((h) => [...h.slice(0, historyIdx + 1), newSlides]);
+    setHistoryIdx((i) => i + 1);
+  }
+
+  function undo() {
+    if (historyIdx <= 0) return;
+    const idx = historyIdx - 1;
+    setHistoryIdx(idx);
+    setSlides(JSON.parse(JSON.stringify(history[idx])));
+  }
+
+  function redo() {
+    if (historyIdx >= history.length - 1) return;
+    const idx = historyIdx + 1;
+    setHistoryIdx(idx);
+    setSlides(JSON.parse(JSON.stringify(history[idx])));
+  }
 
   // Boot
   useEffect(() => {
@@ -261,7 +283,11 @@ function Index() {
   }, [slides, view]);
 
   const update = (patch: Partial<Slide>) => {
-    setSlides((s) => s.map((sl, i) => (i === active ? { ...sl, ...patch } : sl)));
+    setSlides((s) => {
+      const next = s.map((sl, i) => (i === active ? { ...sl, ...patch } : sl));
+      pushHistory(next);
+      return next;
+    });
   };
 
   const onImage = (file: File) => {
@@ -340,6 +366,8 @@ function Index() {
         }),
       );
       setSlides(next);
+      setHistory([next]);
+      setHistoryIdx(0);
       setActive(0);
       setCurrentName("");
       setView("editor");
@@ -535,6 +563,23 @@ function Index() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10"
             >
               {compact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              onClick={undo}
+              disabled={historyIdx <= 0}
+              title="Desfazer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-30"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={historyIdx >= history.length - 1}
+              title="Refazer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-30"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </button>
             </button>
             {view === "editor" && (
               <button
@@ -1199,7 +1244,11 @@ function Index() {
                 </div>
                 <button
                   onClick={() => {
-                    setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })));
+                    setSlides((prev) => {
+                      const next = prev.map((sl) => ({ ...sl, align: s.align }));
+                      pushHistory(next);
+                      return next;
+                    });
                     setAlignFlash(true);
                     setTimeout(() => setAlignFlash(false), 800);
                   }}

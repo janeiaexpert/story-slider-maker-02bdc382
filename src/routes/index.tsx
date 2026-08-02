@@ -196,7 +196,8 @@ function Index() {
   const [typography, setTypography] = useState("Médio");
   const [colorTheme, setColorTheme] = useState("Bege");
   const [textSizeScale, setTextSizeScale] = useState(100);
-  const [slideTheme, setSlideTheme] = useState<"dark" | "light" | "alegre">("dark");
+  const [slideTheme, setSlideTheme] = useState<"dark" | "light" | "custom">("dark");
+  const [customBg, setCustomBg] = useState("#1a1040");
   const [generatingImage, setGeneratingImage] = useState(false);
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
@@ -489,7 +490,7 @@ function Index() {
   const slideThemeColors = {
     dark: { bg: "#0a0a0a", text: "#ffffff" },
     light: { bg: "#f5f1ea", text: "#1a1a1a" },
-    alegre: { bg: "#1a1040", text: "#ffffff" },
+    custom: { bg: customBg, text: "#ffffff" },
   };
   const BG = slideThemeColors[slideTheme].bg;
   const textColor = slideThemeColors[slideTheme].text;
@@ -1037,18 +1038,17 @@ function Index() {
                 </Field>
 
                 <Field label="Tema do slide">
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="flex gap-1.5">
                     {(
                       [
                         { v: "dark" as const, l: "Escuro" },
                         { v: "light" as const, l: "Claro" },
-                        { v: "alegre" as const, l: "Alegre" },
                       ]
                     ).map((opt) => (
                       <button
                         key={opt.v}
                         onClick={() => setSlideTheme(opt.v)}
-                        className={`rounded-md py-2 text-[11px] font-semibold ${
+                        className={`flex-1 rounded-md py-2 text-[11px] font-semibold ${
                           slideTheme === opt.v
                             ? "bg-white text-black"
                             : "bg-white/5 text-white/70"
@@ -1057,6 +1057,29 @@ function Index() {
                         {opt.l}
                       </button>
                     ))}
+                    <button
+                      onClick={() => setSlideTheme("custom")}
+                      className={`relative flex-1 overflow-hidden rounded-md py-2 text-[11px] font-semibold ${
+                        slideTheme === "custom"
+                          ? "ring-2 ring-white"
+                          : ""
+                      }`}
+                    >
+                      <div
+                        className="absolute inset-0"
+                        style={{ backgroundColor: customBg }}
+                      />
+                      <span className="relative z-10 text-white">Cor</span>
+                    </button>
+                    <input
+                      type="color"
+                      value={customBg}
+                      onChange={(e) => {
+                        setCustomBg(e.target.value);
+                        setSlideTheme("custom");
+                      }}
+                      className="h-9 w-9 shrink-0 cursor-pointer rounded bg-transparent p-0"
+                    />
                   </div>
                 </Field>
 

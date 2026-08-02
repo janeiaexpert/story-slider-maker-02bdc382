@@ -938,7 +938,7 @@ function Index() {
 
             {/* Editor */}
             <aside
-              className={`bg-[#161616] ring-1 ring-white/10 md:rounded-xl md:bg-white/[0.03] md:p-5 md:static md:max-h-none md:overflow-visible md:z-auto fixed left-0 right-0 bottom-0 z-40 rounded-t-2xl p-4 shadow-2xl transition-[max-height] duration-300 ${
+              className={`bg-[#161616] ring-1 ring-white/10 md:rounded-xl md:bg-white/[0.03] md:p-5 md:static md:max-h-none md:overflow-hidden md:z-auto fixed left-0 right-0 bottom-0 z-40 rounded-t-2xl p-4 shadow-2xl transition-[max-height] duration-300 ${
                 editorOpen ? "max-h-[54vh] overflow-y-auto" : "max-h-[52px] overflow-hidden"
               }`}
             >
@@ -1253,13 +1253,13 @@ function Index() {
               </Field>
 
               <Field label={`Tamanho do título · ${Math.round((s.titleScale ?? 1) * 100)}%`}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => update({ titleScale: Math.max(0.7, (s.titleScale ?? 1) - 0.1) })}
-                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
                     aria-label="Diminuir título"
                   >
-                    <Minimize2 className="h-3.5 w-3.5" />
+                    <Minimize2 className="h-3 w-3" />
                   </button>
                   <input
                     type="range"
@@ -1268,26 +1268,26 @@ function Index() {
                     step={0.05}
                     value={s.titleScale ?? 1}
                     onChange={(e) => update({ titleScale: Number(e.target.value) })}
-                    className="flex-1 accent-white"
+                    className="w-full accent-white"
                   />
                   <button
                     onClick={() => update({ titleScale: Math.min(1.6, (s.titleScale ?? 1) + 0.1) })}
-                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
                     aria-label="Aumentar título"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" />
+                    <Maximize2 className="h-3 w-3" />
                   </button>
                 </div>
               </Field>
 
               <Field label={`Tamanho do subtítulo · ${Math.round((s.subtitleScale ?? 1) * 100)}%`}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => update({ subtitleScale: Math.max(0.7, (s.subtitleScale ?? 1) - 0.1) })}
-                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
                     aria-label="Diminuir subtítulo"
                   >
-                    <Minimize2 className="h-3.5 w-3.5" />
+                    <Minimize2 className="h-3 w-3" />
                   </button>
                   <input
                     type="range"
@@ -1296,14 +1296,14 @@ function Index() {
                     step={0.05}
                     value={s.subtitleScale ?? 1}
                     onChange={(e) => update({ subtitleScale: Number(e.target.value) })}
-                    className="flex-1 accent-white"
+                    className="w-full accent-white"
                   />
                   <button
                     onClick={() => update({ subtitleScale: Math.min(1.6, (s.subtitleScale ?? 1) + 0.1) })}
-                    className="rounded bg-white/10 p-1.5 text-white/70 hover:bg-white/20"
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
                     aria-label="Aumentar subtítulo"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" />
+                    <Maximize2 className="h-3 w-3" />
                   </button>
                 </div>
               </Field>
@@ -1312,7 +1312,7 @@ function Index() {
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
-                      { v: "overlay", l: "Sobrep." },
+                      { v: "overlay", l: "Sobre." },
                       { v: "image-left", l: "Esq." },
                       { v: "image-right", l: "Dir." },
                     ] as const
@@ -1341,7 +1341,7 @@ function Index() {
                     [
                       { v: "bar", l: "Barra" },
                       { v: "counter", l: "1/N" },
-                      { v: "none", l: "Nenhuma" },
+                      { v: "none", l: "Sem" },
                     ] as const
                   ).map((opt) => (
                     <button

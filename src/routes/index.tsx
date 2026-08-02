@@ -37,16 +37,10 @@ import {
   saveBrand,
 } from "@/lib/brand-storage";
 import {
-  type SavedCarousel,
-  deleteCarousel,
-  loadLibrary,
-  newId,
-  upsertCarousel,
   saveBrandToCloud,
   loadBrandFromCloud,
 } from "@/lib/carousel-library";
-import { supabase } from "@/integrations/supabase/client";
-import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
+import { Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
 import { getSpaceId, shareUrl } from "@/lib/space-id";
 
 export const Route = createFileRoute("/")({

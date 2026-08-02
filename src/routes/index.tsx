@@ -116,12 +116,12 @@ function migrateSlide(d: Partial<Slide>): Slide {
 
 // Renderiza texto com **palavra** destacada em cor de marcador.
 function renderRich(text: string, highlight: string, highlightBg?: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*)/g);
   return parts.map((p, i) => {
     const mColor = p.match(/^\*\*([^*]+)\*\*$/);
     if (mColor) {
       return (
-        <span key={i} style={{ color: highlight, fontWeight: 700, fontStyle: "italic" }}>
+        <span key={i} style={{ color: highlight, fontWeight: 700 }}>
           {mColor[1]}
         </span>
       );
@@ -129,8 +129,16 @@ function renderRich(text: string, highlight: string, highlightBg?: string): Reac
     const mBg = p.match(/^__([^_]+)__$/);
     if (mBg) {
       return (
-        <span key={i} style={{ background: highlightBg || highlight, color: "#000", padding: "0 4px", borderRadius: "3px", fontWeight: 600, fontStyle: "italic" }}>
+        <span key={i} style={{ background: highlightBg || highlight, color: "#000", padding: "0 4px", borderRadius: "3px", fontWeight: 600 }}>
           {mBg[1]}
+        </span>
+      );
+    }
+    const mItalic = p.match(/^\*([^*]+)\*$/);
+    if (mItalic) {
+      return (
+        <span key={i} style={{ fontStyle: "italic" }}>
+          {mItalic[1]}
         </span>
       );
     }
@@ -1121,7 +1129,7 @@ function Index() {
                 />
               </Field>
 
-              <Field label="Cores do texto">
+              <Field label="Cores do texto · *itálico* · **cor** · __fundo__">
                 <div className="grid grid-cols-5 gap-2">
                   {([
                     { k: "kickerColor", l: "Kicker", d: GOLD },

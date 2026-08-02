@@ -1341,7 +1341,7 @@ function Index() {
                     [
                       { v: "bar", l: "Barra" },
                       { v: "counter", l: "1/N" },
-                      { v: "none", l: "Sem" },
+                      { v: "none", l: "Em tudo sem" },
                     ] as const
                   ).map((opt) => (
                     <button

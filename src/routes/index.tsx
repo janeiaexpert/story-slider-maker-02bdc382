@@ -213,6 +213,8 @@ function Index() {
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const subtitleRef = useRef<HTMLTextAreaElement>(null);
 
   const generateFn = useServerFn(generateCarousel);
 
@@ -233,6 +235,23 @@ function Index() {
     const idx = historyIdx + 1;
     setHistoryIdx(idx);
     setSlides(JSON.parse(JSON.stringify(history[idx])));
+  }
+
+  function wrapSelection(ref: React.RefObject<HTMLTextAreaElement | null>, before: string, after: string) {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (start === end) return;
+    const text = el.value;
+    const selected = text.substring(start, end);
+    const newText = text.substring(0, start) + before + selected + after + text.substring(end);
+    el.value = newText;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
   }
 
   // Boot
@@ -1155,23 +1174,35 @@ function Index() {
 
               <Field label="Título (Enter quebra linha)">
                 <textarea
+                  ref={titleRef}
                   value={s.title}
                   onChange={(e) => update({ title: e.target.value })}
                   rows={3}
                   className={inputCls}
                 />
+                <div className="flex gap-1 mt-1">
+                  <button onClick={() => wrapSelection(titleRef, "*", "*")} className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/20">Itálico</button>
+                  <button onClick={() => wrapSelection(titleRef, "**", "**")} className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/20">Cor</button>
+                  <button onClick={() => wrapSelection(titleRef, "__", "__")} className="rounded bg-yellow-500/20 px-2 py-0.5 text-[10px] text-yellow-300 hover:bg-yellow-500/30">Fundo</button>
+                </div>
               </Field>
 
               <Field label="Subtítulo">
                 <textarea
+                  ref={subtitleRef}
                   value={s.subtitle}
                   onChange={(e) => update({ subtitle: e.target.value })}
                   rows={2}
                   className={inputCls}
                 />
+                <div className="flex gap-1 mt-1">
+                  <button onClick={() => wrapSelection(subtitleRef, "*", "*")} className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/20">Itálico</button>
+                  <button onClick={() => wrapSelection(subtitleRef, "**", "**")} className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/20">Cor</button>
+                  <button onClick={() => wrapSelection(subtitleRef, "__", "__")} className="rounded bg-yellow-500/20 px-2 py-0.5 text-[10px] text-yellow-300 hover:bg-yellow-500/30">Fundo</button>
+                </div>
               </Field>
 
-              <Field label="Cores do texto · *itálico* · **cor** · __fundo__">
+              <Field label="Cores do texto">
                 <div className="grid grid-cols-5 gap-2">
                   {([
                     { k: "kickerColor", l: "Kicker", d: GOLD },

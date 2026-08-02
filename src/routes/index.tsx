@@ -323,7 +323,6 @@ function Index() {
       );
       setSlides(next);
       setActive(0);
-      setCurrentId(null);
       setCurrentName("");
       setView("editor");
     } catch (e: any) {
@@ -474,7 +473,6 @@ function Index() {
   const newCarousel = () => {
     setInsight("");
     setError(null);
-    setCurrentId(null);
     setCurrentName("");
     setView("insight");
   };
@@ -526,21 +524,6 @@ function Index() {
               </button>
             )}
             <button
-              onClick={() => {
-                refreshLibrary();
-                setShowLibrary(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
-            >
-              <FolderOpen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Biblioteca</span>
-              {library.length > 0 && (
-                <span className="ml-0.5 rounded-full bg-white/10 px-1.5 text-[10px]">
-                  {library.length}
-                </span>
-              )}
-            </button>
-            <button
               onClick={() => setShowStyles(true)}
               className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
             >
@@ -560,7 +543,7 @@ function Index() {
                   onClick={() => {
                     if (
                       confirm(
-                        "Criar um novo carrossel? O atual continua na Biblioteca se você já clicou em Salvar.",
+                        "Criar um novo carrossel? O atual será descartado.",
                       )
                     ) {
                       newCarousel();
@@ -572,16 +555,7 @@ function Index() {
                   <Plus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Novo</span>
                 </button>
-                <button
-                  onClick={handleSaveCarousel}
-                  disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-40"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">
-                    {savedFlash ? "Salvo!" : currentId ? "Atualizar" : "Salvar"}
-                  </span>
-                </button>
+
                 <button
                   onClick={() => {
                     const url = shareUrl(getSpaceId());
@@ -628,7 +602,6 @@ function Index() {
               placeholder="Dê um nome ao carrossel (ex: lançamento agosto)"
               className="flex-1 max-w-md rounded-md border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white outline-none focus:border-white/30"
             />
-            {currentId && <span className="text-white/40">· salvo</span>}
           </div>
         )}
 

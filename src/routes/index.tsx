@@ -78,6 +78,7 @@ type Slide = {
   highlightColor?: string;
   titleScale?: number; // 0.7 - 1.6
   subtitleScale?: number;
+  titleSpacing?: number; // -5 - 10 (px)
   layout?: "overlay" | "image-left" | "image-right";
   elements?: ElementItem[];
   progressStyle?: "bar" | "counter" | "none";
@@ -104,6 +105,7 @@ function migrateSlide(d: Partial<Slide>): Slide {
     highlightColor: d.highlightColor,
     titleScale: d.titleScale ?? 1,
     subtitleScale: d.subtitleScale ?? 1,
+    titleSpacing: d.titleSpacing,
     layout: d.layout ?? "overlay",
     elements: d.elements ?? [],
     progressStyle: d.progressStyle ?? "bar",
@@ -779,7 +781,7 @@ function Index() {
                                   fontFamily: activeTypography.fontFamily,
                                   fontWeight: activeTypography.headingWeight,
                                   color: s.titleColor ?? "#ffffff",
-                                  letterSpacing: activeTypography.headingSpacing,
+                                  letterSpacing: s.titleSpacing != null ? `${s.titleSpacing}px` : activeTypography.headingSpacing,
                                   textTransform: activeTypography.headingTransform as "none" | "uppercase",
                                   wordSpacing: "normal",
                                   overflowWrap: "anywhere",
@@ -1274,6 +1276,34 @@ function Index() {
                     onClick={() => update({ titleScale: Math.min(1.6, (s.titleScale ?? 1) + 0.1) })}
                     className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
                     aria-label="Aumentar título"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </Field>
+
+              <Field label={`Espaço entre letras · ${s.titleSpacing ?? 0}px`}>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => update({ titleSpacing: Math.max(-5, (s.titleSpacing ?? 0) - 1) })}
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
+                    aria-label="Diminuir espaçamento"
+                  >
+                    <Minimize2 className="h-3 w-3" />
+                  </button>
+                  <input
+                    type="range"
+                    min={-5}
+                    max={10}
+                    step={0.5}
+                    value={s.titleSpacing ?? 0}
+                    onChange={(e) => update({ titleSpacing: Number(e.target.value) })}
+                    className="w-full accent-white"
+                  />
+                  <button
+                    onClick={() => update({ titleSpacing: Math.min(10, (s.titleSpacing ?? 0) + 1) })}
+                    className="shrink-0 rounded bg-white/10 p-1 text-white/70 hover:bg-white/20"
+                    aria-label="Aumentar espaçamento"
                   >
                     <Maximize2 className="h-3 w-3" />
                   </button>

@@ -290,7 +290,7 @@ Variação ${Math.random().toString(36).slice(2, 6)} — não repita o estilo de
   });
 
 export const generateImage = createServerFn({ method: "POST" })
-  .validator((d: { prompt: string }) => d)
+  .inputValidator((d: { prompt: string }) => d)
   .handler(async ({ data }) => {
     const { prompt } = data;
     const encoded = encodeURIComponent(prompt);

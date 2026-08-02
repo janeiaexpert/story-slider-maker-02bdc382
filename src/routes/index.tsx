@@ -1105,39 +1105,39 @@ function Index() {
               </Field>
 
               <Field label="Alinhamento">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {(["top", "center", "bottom"] as const).map((a) => (
                     <button
                       key={a}
                       onClick={() => update({ align: a })}
-                      className={`flex-1 rounded-md py-2 text-xs font-semibold capitalize ${
+                      className={`rounded-md py-2 text-xs font-semibold capitalize ${
                         s.align === a ? "bg-white text-black" : "bg-white/5 text-white/70"
                       }`}
                     >
                       {a}
                     </button>
                   ))}
-                  <button
-                    onClick={() => {
-                      setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })));
-                      setAlignFlash(true);
-                      setTimeout(() => setAlignFlash(false), 800);
-                    }}
-                    className={`flex-1 rounded-md py-2 text-xs font-semibold transition-all duration-200 ${
-                      alignFlash ? "bg-green-500 text-white" : "bg-white/10 text-white/60 hover:bg-white/20"
-                    }`}
-                  >
-                    {alignFlash ? "✓ Pronto!" : "Alinhar todos"}
-                  </button>
                 </div>
+                <button
+                  onClick={() => {
+                    setSlides((prev) => prev.map((sl) => ({ ...sl, align: s.align })));
+                    setAlignFlash(true);
+                    setTimeout(() => setAlignFlash(false), 800);
+                  }}
+                  className={`mt-2 w-full rounded-md py-2 text-xs font-semibold transition-all duration-200 ${
+                    alignFlash ? "bg-green-500 text-white" : "bg-white/10 text-white/60 hover:bg-white/20"
+                  }`}
+                >
+                  {alignFlash ? "✓ Pronto!" : "Alinhar todos"}
+                </button>
               </Field>
 
               <Field label="Posição do botão">
                 <div className="flex gap-2">
                   {(
                     [
-                      { v: "inline", l: "Junto ao texto" },
-                      { v: "bottom", l: "Rodapé do card" },
+                      { v: "inline", l: "Junto" },
+                      { v: "bottom", l: "Rodapé" },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -1154,19 +1154,20 @@ function Index() {
               </Field>
 
               <Field label="Gradiente (direção)">
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {(["top", "bottom", "left", "right"] as const).map((g) => {
                     const Icon =
                       g === "top" ? ArrowUp : g === "bottom" ? ArrowDown : g === "left" ? ArrowLeft : ArrowRight;
+                    const labels: Record<string, string> = { top: "Cima", bottom: "Baixo", left: "Esq.", right: "Dir." };
                     return (
                       <button
                         key={g}
                         onClick={() => update({ gradient: g })}
-                        className={`inline-flex items-center justify-center gap-1 rounded-md py-2 text-xs font-semibold capitalize ${
+                        className={`inline-flex items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-semibold ${
                           s.gradient === g ? "bg-white text-black" : "bg-white/5 text-white/70"
                         }`}
                       >
-                        <Icon className="h-3.5 w-3.5" /> {g}
+                        <Icon className="h-3.5 w-3.5 shrink-0" /> {labels[g]}
                       </button>
                     );
                   })}
@@ -1227,7 +1228,7 @@ function Index() {
                     <div className="mb-1 text-[11px] tracking-wider uppercase text-white/50">
                       Enquadramento vertical
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {(["top", "center", "bottom"] as const).map((p) => {
                         const Icon = p === "top" ? ArrowUp : p === "bottom" ? ArrowDown : Circle;
                         const label = p === "top" ? "topo" : p === "bottom" ? "base" : "centro";
@@ -1235,11 +1236,11 @@ function Index() {
                           <button
                             key={p}
                             onClick={() => update({ imagePos: p })}
-                            className={`inline-flex items-center justify-center gap-1 rounded-md py-2 text-xs font-semibold ${
+                            className={`inline-flex items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-semibold ${
                               s.imagePos === p ? "bg-white text-black" : "bg-white/5 text-white/70"
                             }`}
                           >
-                            <Icon className="h-3.5 w-3.5" /> {label}
+                            <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
                           </button>
                         );
                       })}
@@ -1305,18 +1306,18 @@ function Index() {
               </Field>
 
               <Field label="Layout do card">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
-                      { v: "overlay", l: "Sobreposto" },
-                      { v: "image-left", l: "Foto esq." },
-                      { v: "image-right", l: "Foto dir." },
+                      { v: "overlay", l: "Sobrepor" },
+                      { v: "image-left", l: "Esq." },
+                      { v: "image-right", l: "Dir." },
                     ] as const
                   ).map((opt) => (
                     <button
                       key={opt.v}
                       onClick={() => update({ layout: opt.v })}
-                      className={`rounded-md py-2 text-xs font-semibold ${
+                      className={`rounded-md py-2 text-[11px] font-semibold ${
                         (s.layout ?? "overlay") === opt.v
                           ? "bg-white text-black"
                           : "bg-white/5 text-white/70"

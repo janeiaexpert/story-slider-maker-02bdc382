@@ -858,7 +858,7 @@ function Index() {
                                   lineHeight: activeTypography.headingLineHeight,
                                 }}
                               >
-                                {renderRich(s.title, s.highlightColor ?? effectiveGold, s.highlightBgColor)}
+                                {renderRich(s.title, s.highlightColor ?? effectiveGold, s.highlightBgColor ?? "#ffdd00")}
                               </h2>
                               {s.subtitle && (
                                 <p
@@ -872,7 +872,7 @@ function Index() {
                                     lineHeight: "1.4",
                                   }}
                                 >
-                                  {renderRich(s.subtitle, s.highlightColor ?? effectiveGold, s.highlightBgColor)}
+                                  {renderRich(s.subtitle, s.highlightColor ?? effectiveGold, s.highlightBgColor ?? "#ffdd00")}
                                 </p>
                               )}
                               {s.buttonText && s.buttonPosition === "inline" && (

@@ -47,6 +47,17 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+type ElementItem = {
+  id: string;
+  elementId: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+  opacity: number;
+  color?: string;
+};
+
 type Slide = {
   kicker: string;
   title: string;

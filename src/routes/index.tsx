@@ -235,6 +235,26 @@ function Index() {
     });
   }
 
+  function insertAtCursor(
+    ref: React.RefObject<HTMLTextAreaElement | null>,
+    before: string,
+    after: string
+  ) {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = el.value;
+    const newText = text.substring(0, start) + before + "palavra" + after + text.substring(end);
+    const newCursor = start + before.length + 6;
+    el.value = newText;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + before.length, start + before.length + 6);
+    });
+  }
+
   const generateFn = useServerFn(generateCarousel);
 
   // Boot
@@ -1144,19 +1164,18 @@ function Index() {
                     rows={3}
                     className={inputCls}
                   />
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value === "fundo") wrapSelection(titleRef, s.title, "title", "__", "__", update);
-                      else if (e.target.value === "cor") wrapSelection(titleRef, s.title, "title", "**", "**", update);
-                      e.target.value = "";
-                    }}
-                    defaultValue=""
-                    className="h-7 w-10 shrink-0 rounded bg-white/10 text-[10px] text-white cursor-pointer"
-                  >
-                    <option value="" disabled>✦</option>
-                    <option value="fundo">Ab</option>
-                    <option value="cor">Ac</option>
-                  </select>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => insertAtCursor(titleRef, "__", "__")}
+                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Inserir marcador de fundo"
+                    >Ab</button>
+                    <button
+                      onClick={() => insertAtCursor(titleRef, "**", "**")}
+                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Inserir marcador de cor"
+                    >Ac</button>
+                  </div>
                 </div>
               </Field>
 
@@ -1169,19 +1188,18 @@ function Index() {
                     rows={2}
                     className={inputCls}
                   />
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value === "fundo") wrapSelection(subtitleRef, s.subtitle, "subtitle", "__", "__", update);
-                      else if (e.target.value === "cor") wrapSelection(subtitleRef, s.subtitle, "subtitle", "**", "**", update);
-                      e.target.value = "";
-                    }}
-                    defaultValue=""
-                    className="h-7 w-10 shrink-0 rounded bg-white/10 text-[10px] text-white cursor-pointer"
-                  >
-                    <option value="" disabled>✦</option>
-                    <option value="fundo">Ab</option>
-                    <option value="cor">Ac</option>
-                  </select>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => insertAtCursor(subtitleRef, "__", "__")}
+                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Inserir marcador de fundo"
+                    >Ab</button>
+                    <button
+                      onClick={() => insertAtCursor(subtitleRef, "**", "**")}
+                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Inserir marcador de cor"
+                    >Ac</button>
+                  </div>
                 </div>
               </Field>
 

@@ -202,6 +202,38 @@ function Index() {
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const subtitleRef = useRef<HTMLTextAreaElement>(null);
+
+  function wrapSelection(
+    ref: React.RefObject<HTMLTextAreaElement | null>,
+    currentValue: string,
+    field: "title" | "subtitle",
+    before: string,
+    after: string,
+    updater: (patch: Partial<Slide>) => void
+  ) {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = currentValue.substring(start, end);
+    const hasMarker = selected.startsWith(before) && selected.endsWith(after);
+    let newText: string;
+    let newCursor: number;
+    if (hasMarker) {
+      newText = currentValue.substring(0, start) + selected.slice(before.length, -after.length) + currentValue.substring(end);
+      newCursor = start + selected.length - before.length - after.length;
+    } else {
+      newText = currentValue.substring(0, start) + before + selected + after + currentValue.substring(end);
+      newCursor = start + before.length + selected.length + after.length;
+    }
+    updater({ [field]: newText } as Partial<Slide>);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(newCursor, newCursor);
+    });
+  }
 
   const generateFn = useServerFn(generateCarousel);
 
@@ -1104,21 +1136,51 @@ function Index() {
               </Field>
 
               <Field label="Título (Enter quebra linha)">
-                <textarea
-                  value={s.title}
-                  onChange={(e) => update({ title: e.target.value })}
-                  rows={3}
-                  className={inputCls}
-                />
+                <div className="flex gap-1">
+                  <textarea
+                    ref={titleRef}
+                    value={s.title}
+                    onChange={(e) => update({ title: e.target.value })}
+                    rows={3}
+                    className={inputCls}
+                  />
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => wrapSelection(titleRef, s.title, "title", "__", "__", update)}
+                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Marcar fundo"
+                    >Ab</button>
+                    <button
+                      onClick={() => wrapSelection(titleRef, s.title, "title", "**", "**", update)}
+                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Marcar cor"
+                    >Ac</button>
+                  </div>
+                </div>
               </Field>
 
               <Field label="Subtítulo">
-                <textarea
-                  value={s.subtitle}
-                  onChange={(e) => update({ subtitle: e.target.value })}
-                  rows={2}
-                  className={inputCls}
-                />
+                <div className="flex gap-1">
+                  <textarea
+                    ref={subtitleRef}
+                    value={s.subtitle}
+                    onChange={(e) => update({ subtitle: e.target.value })}
+                    rows={2}
+                    className={inputCls}
+                  />
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => wrapSelection(subtitleRef, s.subtitle, "subtitle", "__", "__", update)}
+                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Marcar fundo"
+                    >Ab</button>
+                    <button
+                      onClick={() => wrapSelection(subtitleRef, s.subtitle, "subtitle", "**", "**", update)}
+                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
+                      title="Marcar cor"
+                    >Ac</button>
+                  </div>
+                </div>
               </Field>
 
               <Field label="Cores do texto · marque com **cor** ou __fundo__">

@@ -217,7 +217,6 @@ function Index() {
       } catch {}
     }
     setCompact(localStorage.getItem("carousel-compact-v1") === "1");
-    loadLibrary().then(setLibrary);
   }, []);
 
   useEffect(() => {

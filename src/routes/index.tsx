@@ -283,11 +283,9 @@ function Index() {
   }, [slides, view]);
 
   const update = (patch: Partial<Slide>) => {
-    setSlides((s) => {
-      const next = s.map((sl, i) => (i === active ? { ...sl, ...patch } : sl));
-      pushHistory(next);
-      return next;
-    });
+    const next = slides.map((sl, i) => (i === active ? { ...sl, ...patch } : sl));
+    setSlides(next);
+    pushHistory(next);
   };
 
   const onImage = (file: File) => {
@@ -1244,11 +1242,9 @@ function Index() {
                 </div>
                 <button
                   onClick={() => {
-                    setSlides((prev) => {
-                      const next = prev.map((sl) => ({ ...sl, align: s.align }));
-                      pushHistory(next);
-                      return next;
-                    });
+                    const next = slides.map((sl) => ({ ...sl, align: s.align }));
+                    setSlides(next);
+                    pushHistory(next);
                     setAlignFlash(true);
                     setTimeout(() => setAlignFlash(false), 800);
                   }}

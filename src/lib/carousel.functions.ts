@@ -288,3 +288,17 @@ Variação ${Math.random().toString(36).slice(2, 6)} — não repita o estilo de
 
     return { caption: parsed.caption.trim(), hashtags: tags };
   });
+
+export const generateImage = createServerFn({ method: "POST" })
+  .validator((d: { prompt: string }) => d)
+  .handler(async ({ data }) => {
+    const { prompt } = data;
+    const encoded = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1350&nologo=true&seed=${Date.now()}`;
+    const res = await fetch(url, { redirect: "follow" });
+    if (!res.ok) throw new Error("Falha ao gerar imagem");
+    const blob = await res.arrayBuffer();
+    const base64 = Buffer.from(blob).toString("base64");
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    return { image: `data:${contentType};base64,${base64}` };
+  });

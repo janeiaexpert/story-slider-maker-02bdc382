@@ -22,7 +22,7 @@ import {
   Layout,
   X,
 } from "lucide-react";
-import { generateCarousel, generateCaption } from "@/lib/carousel.functions";
+import { generateCarousel, generateCaption, generateImage } from "@/lib/carousel.functions";
 import {
   type Brand,
   BRAND_PALETTES,
@@ -264,24 +264,18 @@ function Index() {
     reader.readAsDataURL(file);
   };
 
+  const generateImageFn = useServerFn(generateImage);
+
   const generateImageWithAI = async () => {
     const slide = slides[active];
     const parts = [slide.kicker, slide.title, slide.subtitle].filter(Boolean).join(". ");
     const niche = brand.niche || "professional";
     const prompt = `Professional ${niche} poster photo, ${parts}. Dark moody lighting, high quality editorial photography, cinematic, 4:5 aspect ratio, no text, no words, no letters, no watermarks`;
-    const encoded = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1080&height=1350&nologo=true&seed=${Date.now()}`;
     setGeneratingImage(true);
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Falha ao gerar imagem");
-      const blob = await res.blob();
-      const reader = new FileReader();
-      reader.onload = () => {
-        update({ image: reader.result as string });
-        setGeneratingImage(false);
-      };
-      reader.readAsDataURL(blob);
+      const result = await generateImageFn({ data: { prompt } });
+      update({ image: result.image });
+      setGeneratingImage(false);
     } catch (e) {
       console.error("generateImage", e);
       setGeneratingImage(false);
@@ -739,7 +733,7 @@ function Index() {
                           )}
                           {hasImg && !split && (
                             <div
-                              className="absolute inset-0"
+                              className="absolute inset-0 z-[1]"
                               style={{ background: gradientFor(s.gradient, s.gradientIntensity) }}
                             />
                           )}
@@ -752,6 +746,10 @@ function Index() {
                                  alt=""
                                  className="h-full w-full object-cover"
                                 style={{ objectPosition: objPos }}
+                              />
+                              <div
+                                className="absolute inset-0"
+                                style={{ background: gradientFor(s.gradient, s.gradientIntensity) }}
                               />
                             </div>
                           )}

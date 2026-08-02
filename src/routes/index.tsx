@@ -80,6 +80,7 @@ type Slide = {
   subtitleScale?: number;
   layout?: "overlay" | "image-left" | "image-right";
   elements?: ElementItem[];
+  progressStyle?: "bar" | "counter" | "none";
 };
 
 function migrateSlide(d: Partial<Slide>): Slide {
@@ -105,6 +106,7 @@ function migrateSlide(d: Partial<Slide>): Slide {
     subtitleScale: d.subtitleScale ?? 1,
     layout: d.layout ?? "overlay",
     elements: d.elements ?? [],
+    progressStyle: d.progressStyle ?? "bar",
   };
 }
 
@@ -860,16 +862,20 @@ function Index() {
                               <span>
                                 {s.handle} · {s.author}
                               </span>
-                              <span>{active + 1}/8</span>
+                              {(s.progressStyle ?? "bar") !== "none" && (
+                                <span>{active + 1}/{slides.length}</span>
+                              )}
                             </div>
-                            <div
-                              className="mt-2 h-[3px] w-full rounded-full"
-                              style={{
-                                background: `linear-gradient(to right, ${effectiveGold} ${
-                                  ((active + 1) / 8) * 100
-                                }%, rgba(255,255,255,0.15) ${((active + 1) / 8) * 100}%)`,
-                              }}
-                            />
+                            {(s.progressStyle ?? "bar") === "bar" && (
+                              <div
+                                className="mt-2 h-[3px] w-full rounded-full"
+                                style={{
+                                  background: `linear-gradient(to right, ${effectiveGold} ${
+                                    ((active + 1) / slides.length) * 100
+                                  }%, rgba(255,255,255,0.15) ${((active + 1) / slides.length) * 100}%)`,
+                                }}
+                              />
+                            )}
                           </div>
                         </>
                       );
@@ -1329,6 +1335,30 @@ function Index() {
                 {!s.image && (s.layout ?? "overlay") !== "overlay" && (
                   <p className="mt-1 text-[10px] text-white/40">Envie uma foto para o layout dividido aparecer.</p>
                 )}
+              </Field>
+
+              <Field label="Barra de progresso">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(
+                    [
+                      { v: "bar", l: "Barra" },
+                      { v: "counter", l: "1/N" },
+                      { v: "none", l: "Nenhuma" },
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.v}
+                      onClick={() => update({ progressStyle: opt.v })}
+                      className={`rounded-md py-2 text-[11px] font-semibold ${
+                        (s.progressStyle ?? "bar") === opt.v
+                          ? "bg-white text-black"
+                          : "bg-white/5 text-white/70"
+                      }`}
+                    >
+                      {opt.l}
+                    </button>
+                  ))}
+                </div>
               </Field>
 
               </div>

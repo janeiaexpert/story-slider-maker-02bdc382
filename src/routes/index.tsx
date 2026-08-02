@@ -68,6 +68,7 @@ type Slide = {
   titleScale?: number; // 0.7 - 1.6
   subtitleScale?: number;
   layout?: "overlay" | "image-left" | "image-right";
+  elements?: ElementItem[];
 };
 
 function migrateSlide(d: Partial<Slide>): Slide {

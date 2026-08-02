@@ -728,9 +728,9 @@ function Index() {
                                src={s.image!}
                                alt=""
                                className="absolute inset-0 h-full w-full object-cover"
-                              style={{ objectPosition: objPos }}
-                            />
-                          )}
+                               style={{ objectPosition: objPos }}
+                             />
+                           )}
                           {hasImg && !split && (
                             <div
                               className="absolute inset-0 z-[1]"

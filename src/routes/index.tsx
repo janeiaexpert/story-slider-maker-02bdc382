@@ -202,58 +202,6 @@ function Index() {
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
   const slideRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLTextAreaElement>(null);
-  const subtitleRef = useRef<HTMLTextAreaElement>(null);
-
-  function wrapSelection(
-    ref: React.RefObject<HTMLTextAreaElement | null>,
-    currentValue: string,
-    field: "title" | "subtitle",
-    before: string,
-    after: string,
-    updater: (patch: Partial<Slide>) => void
-  ) {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const selected = currentValue.substring(start, end);
-    const hasMarker = selected.startsWith(before) && selected.endsWith(after);
-    let newText: string;
-    let newCursor: number;
-    if (hasMarker) {
-      newText = currentValue.substring(0, start) + selected.slice(before.length, -after.length) + currentValue.substring(end);
-      newCursor = start + selected.length - before.length - after.length;
-    } else {
-      newText = currentValue.substring(0, start) + before + selected + after + currentValue.substring(end);
-      newCursor = start + before.length + selected.length + after.length;
-    }
-    updater({ [field]: newText } as Partial<Slide>);
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(newCursor, newCursor);
-    });
-  }
-
-  function insertAtCursor(
-    ref: React.RefObject<HTMLTextAreaElement | null>,
-    before: string,
-    after: string
-  ) {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const text = el.value;
-    const newText = text.substring(0, start) + before + "palavra" + after + text.substring(end);
-    const newCursor = start + before.length + 6;
-    el.value = newText;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(start + before.length, start + before.length + 6);
-    });
-  }
 
   const generateFn = useServerFn(generateCarousel);
 
@@ -1156,51 +1104,21 @@ function Index() {
               </Field>
 
               <Field label="Título (Enter quebra linha)">
-                <div className="flex gap-1">
-                  <textarea
-                    ref={titleRef}
-                    value={s.title}
-                    onChange={(e) => update({ title: e.target.value })}
-                    rows={3}
-                    className={inputCls}
-                  />
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button
-                      onClick={() => insertAtCursor(titleRef, "__", "__")}
-                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Inserir marcador de fundo"
-                    >Ab</button>
-                    <button
-                      onClick={() => insertAtCursor(titleRef, "**", "**")}
-                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Inserir marcador de cor"
-                    >Ac</button>
-                  </div>
-                </div>
+                <textarea
+                  value={s.title}
+                  onChange={(e) => update({ title: e.target.value })}
+                  rows={3}
+                  className={inputCls}
+                />
               </Field>
 
               <Field label="Subtítulo">
-                <div className="flex gap-1">
-                  <textarea
-                    ref={subtitleRef}
-                    value={s.subtitle}
-                    onChange={(e) => update({ subtitle: e.target.value })}
-                    rows={2}
-                    className={inputCls}
-                  />
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button
-                      onClick={() => insertAtCursor(subtitleRef, "__", "__")}
-                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Inserir marcador de fundo"
-                    >Ab</button>
-                    <button
-                      onClick={() => insertAtCursor(subtitleRef, "**", "**")}
-                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Inserir marcador de cor"
-                    >Ac</button>
-                  </div>
-                </div>
+                <textarea
+                  value={s.subtitle}
+                  onChange={(e) => update({ subtitle: e.target.value })}
+                  rows={2}
+                  className={inputCls}
+                />
               </Field>
 
               <Field label="Cores do texto">

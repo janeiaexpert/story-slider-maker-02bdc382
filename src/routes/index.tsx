@@ -230,33 +230,6 @@ function Index() {
     }
   }, [brand, brandReady]);
 
-  useEffect(() => {
-    const space = getSpaceId();
-    const channel = supabase
-      .channel(`space:${space}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "carousels", filter: `space_id=eq.${space}` },
-        async (payload) => {
-          if (payload.eventType === "DELETE") {
-            setLibrary(await loadLibrary());
-            return;
-          }
-          const row = payload.new as { id: string; slides: unknown[] };
-          if (row.id === "__brand__") {
-            const cloud = Array.isArray(row.slides) ? row.slides[0] : null;
-            if (cloud) {
-              setBrand((prev) => ({ ...prev, ...(cloud as Partial<Brand>) }));
-              saveBrand({ ...loadBrand()!, ...(cloud as Partial<Brand>) });
-            }
-          } else {
-            setLibrary(await loadLibrary());
-          }
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
   const refreshLibrary = async () => setLibrary(await loadLibrary());
 

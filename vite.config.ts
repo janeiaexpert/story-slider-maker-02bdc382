@@ -14,9 +14,7 @@ export default defineConfig({
       server: { entry: "server" },
     }),
     nitro({
-      vercel: {
-        edgeServer: true,
-      },
+      preset: "vercel",
     }),
     viteReact(),
     tailwindcss(),

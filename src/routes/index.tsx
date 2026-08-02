@@ -37,21 +37,26 @@ import {
   saveBrand,
 } from "@/lib/brand-storage";
 import {
-  type SavedCarousel,
-  deleteCarousel,
-  loadLibrary,
-  newId,
-  upsertCarousel,
   saveBrandToCloud,
   loadBrandFromCloud,
 } from "@/lib/carousel-library";
-import { supabase } from "@/integrations/supabase/client";
-import { Save, FolderOpen, Trash2, Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
+import { Minimize2, Maximize2, MessageSquareText, Share2 } from "lucide-react";
 import { getSpaceId, shareUrl } from "@/lib/space-id";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
+
+type ElementItem = {
+  id: string;
+  elementId: string;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+  opacity: number;
+  color?: string;
+};
 
 type Slide = {
   kicker: string;
@@ -74,6 +79,7 @@ type Slide = {
   titleScale?: number; // 0.7 - 1.6
   subtitleScale?: number;
   layout?: "overlay" | "image-left" | "image-right";
+  elements?: ElementItem[];
 };
 
 function migrateSlide(d: Partial<Slide>): Slide {
@@ -167,11 +173,7 @@ function Index() {
   const [slides, setSlides] = useState<Slide[]>(blankSlides(defaultBrand));
   const [active, setActive] = useState(0);
   const [saved, setSaved] = useState<number | null>(null);
-  const [currentId, setCurrentId] = useState<string | null>(null);
   const [currentName, setCurrentName] = useState<string>("");
-  const [library, setLibrary] = useState<SavedCarousel[]>([]);
-  const [showLibrary, setShowLibrary] = useState(false);
-  const [savedFlash, setSavedFlash] = useState(false);
   const [shareFlash, setShareFlash] = useState(false);
   const [compact, setCompact] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -215,7 +217,6 @@ function Index() {
       } catch {}
     }
     setCompact(localStorage.getItem("carousel-compact-v1") === "1");
-    loadLibrary().then(setLibrary);
   }, []);
 
   useEffect(() => {
@@ -229,82 +230,7 @@ function Index() {
     }
   }, [brand, brandReady]);
 
-  useEffect(() => {
-    const space = getSpaceId();
-    const channel = supabase
-      .channel(`space:${space}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "carousels", filter: `space_id=eq.${space}` },
-        async (payload) => {
-          if (payload.eventType === "DELETE") {
-            setLibrary(await loadLibrary());
-            return;
-          }
-          const row = payload.new as { id: string; slides: unknown[] };
-          if (row.id === "__brand__") {
-            const cloud = Array.isArray(row.slides) ? row.slides[0] : null;
-            if (cloud) {
-              setBrand((prev) => ({ ...prev, ...(cloud as Partial<Brand>) }));
-              saveBrand({ ...loadBrand()!, ...(cloud as Partial<Brand>) });
-            }
-          } else {
-            setLibrary(await loadLibrary());
-          }
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
-  const refreshLibrary = async () => setLibrary(await loadLibrary());
-
-  const handleSaveCarousel = async () => {
-    const name =
-      currentName.trim() ||
-      slides[0]?.title?.split("\n")[0]?.slice(0, 60) ||
-      "Carrossel sem nome";
-    const id = currentId ?? newId();
-    const now = Date.now();
-    const item: SavedCarousel = {
-      id,
-      name,
-      createdAt: now,
-      updatedAt: now,
-      slides,
-    };
-    try {
-      const next = await upsertCarousel(item);
-      setLibrary(next);
-      setCurrentId(id);
-      setCurrentName(name);
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1500);
-    } catch (e) {
-      console.error("handleSaveCarousel", e);
-      setError("Erro ao salvar. Verifique sua conexão.");
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-
-  const handleLoadCarousel = (item: SavedCarousel) => {
-    const data = (item.slides as Partial<Slide>[]).map((d) => migrateSlide(d));
-    setSlides(data);
-    setCurrentId(item.id);
-    setCurrentName(item.name);
-    setActive(0);
-    setView("editor");
-    setShowLibrary(false);
-  };
-
-  const handleDeleteCarousel = async (id: string) => {
-    const next = await deleteCarousel(id);
-    setLibrary(next);
-    if (currentId === id) {
-      setCurrentId(null);
-      setCurrentName("");
-    }
-  };
 
   useEffect(() => {
     if (view === "editor") localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
@@ -397,7 +323,6 @@ function Index() {
       );
       setSlides(next);
       setActive(0);
-      setCurrentId(null);
       setCurrentName("");
       setView("editor");
     } catch (e: any) {
@@ -449,7 +374,6 @@ function Index() {
     try {
       return await toPng(el, {
         pixelRatio: 2,
-        useCORS: true,
         cacheBust: true,
       });
     } catch (e) {
@@ -458,7 +382,6 @@ function Index() {
     const { toCanvas } = await import("html-to-image");
     const canvas = await toCanvas(el, {
       pixelRatio: 2,
-      useCORS: true,
       cacheBust: true,
     });
     return canvas.toDataURL("image/png");
@@ -548,7 +471,6 @@ function Index() {
   const newCarousel = () => {
     setInsight("");
     setError(null);
-    setCurrentId(null);
     setCurrentName("");
     setView("insight");
   };
@@ -600,21 +522,6 @@ function Index() {
               </button>
             )}
             <button
-              onClick={() => {
-                refreshLibrary();
-                setShowLibrary(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
-            >
-              <FolderOpen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Biblioteca</span>
-              {library.length > 0 && (
-                <span className="ml-0.5 rounded-full bg-white/10 px-1.5 text-[10px]">
-                  {library.length}
-                </span>
-              )}
-            </button>
-            <button
               onClick={() => setShowStyles(true)}
               className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
             >
@@ -634,7 +541,7 @@ function Index() {
                   onClick={() => {
                     if (
                       confirm(
-                        "Criar um novo carrossel? O atual continua na Biblioteca se você já clicou em Salvar.",
+                        "Criar um novo carrossel? O atual será descartado.",
                       )
                     ) {
                       newCarousel();
@@ -646,16 +553,7 @@ function Index() {
                   <Plus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Novo</span>
                 </button>
-                <button
-                  onClick={handleSaveCarousel}
-                  disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-2 text-xs font-semibold hover:bg-white/20 disabled:opacity-40"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">
-                    {savedFlash ? "Salvo!" : currentId ? "Atualizar" : "Salvar"}
-                  </span>
-                </button>
+
                 <button
                   onClick={() => {
                     const url = shareUrl(getSpaceId());
@@ -702,7 +600,6 @@ function Index() {
               placeholder="Dê um nome ao carrossel (ex: lançamento agosto)"
               className="flex-1 max-w-md rounded-md border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white outline-none focus:border-white/30"
             />
-            {currentId && <span className="text-white/40">· salvo</span>}
           </div>
         )}
 
@@ -1452,15 +1349,6 @@ function Index() {
           }}
         />
       )}
-      {showLibrary && (
-        <LibraryDialog
-          items={library}
-          currentId={currentId}
-          onLoad={handleLoadCarousel}
-          onDelete={handleDeleteCarousel}
-          onClose={() => setShowLibrary(false)}
-        />
-      )}
       {showStyles && (
         <StylesDialog
           current={brand}
@@ -1664,95 +1552,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function LibraryDialog({
-  items,
-  currentId,
-  onLoad,
-  onDelete,
-  onClose,
-}: {
-  items: SavedCarousel[];
-  currentId: string | null;
-  onLoad: (item: SavedCarousel) => void;
-  onDelete: (id: string) => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 p-4 overflow-y-auto">
-      <div className="w-full max-w-2xl rounded-2xl bg-[#161616] p-6 ring-1 ring-white/10">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Biblioteca de carrosséis</h2>
-            <p className="text-xs text-white/50">
-              Seus carrosséis salvos ficam aqui — acesse qualquer um para exportar ou editar.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-md bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
-          >
-            Fechar
-          </button>
-        </div>
-        {items.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/10 p-8 text-center text-sm text-white/40">
-            Nenhum carrossel salvo ainda. Gere um e clique em "Salvar" para guardar.
-          </div>
-        ) : (
-          <ul className="max-h-[60vh] space-y-2 overflow-y-auto">
-            {items.map((item) => {
-              const first = (item.slides[0] as Slide | undefined)?.title ?? "";
-              const date = new Date(item.updatedAt).toLocaleString("pt-BR", {
-                day: "2-digit",
-                month: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const isCurrent = item.id === currentId;
-              return (
-                <li
-                  key={item.id}
-                  className={`flex items-center gap-3 rounded-lg border p-3 ${
-                    isCurrent ? "border-white/40 bg-white/[0.04]" : "border-white/10"
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-white">
-                      {item.name}
-                      {isCurrent && (
-                        <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-normal text-white/60">
-                          aberto
-                        </span>
-                      )}
-                    </div>
-                    <div className="truncate text-xs text-white/40">
-                      {first || "—"} · atualizado em {date}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onLoad(item)}
-                    className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20"
-                  >
-                    Abrir
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Excluir "${item.name}"?`)) onDelete(item.id);
-                    }}
-                    className="rounded-md bg-white/5 p-2 text-white/60 hover:bg-red-500/20 hover:text-red-300"
-                    aria-label="Excluir"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function StylesDialog({
   current,

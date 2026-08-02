@@ -121,7 +121,7 @@ function renderRich(text: string, highlight: string, highlightBg?: string): Reac
     const mColor = p.match(/^\*\*([^*]+)\*\*$/);
     if (mColor) {
       return (
-        <span key={i} style={{ color: highlight, fontWeight: 700 }}>
+        <span key={i} style={{ color: highlight, fontWeight: 700, fontStyle: "italic" }}>
           {mColor[1]}
         </span>
       );
@@ -129,7 +129,7 @@ function renderRich(text: string, highlight: string, highlightBg?: string): Reac
     const mBg = p.match(/^__([^_]+)__$/);
     if (mBg) {
       return (
-        <span key={i} style={{ background: highlightBg || highlight, color: "#000", padding: "0 4px", borderRadius: "3px", fontWeight: 600 }}>
+        <span key={i} style={{ background: highlightBg || highlight, color: "#000", padding: "0 4px", borderRadius: "3px", fontWeight: 600, fontStyle: "italic" }}>
           {mBg[1]}
         </span>
       );
@@ -1144,18 +1144,19 @@ function Index() {
                     rows={3}
                     className={inputCls}
                   />
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button
-                      onClick={() => wrapSelection(titleRef, s.title, "title", "__", "__", update)}
-                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Marcar fundo"
-                    >Ab</button>
-                    <button
-                      onClick={() => wrapSelection(titleRef, s.title, "title", "**", "**", update)}
-                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Marcar cor"
-                    >Ac</button>
-                  </div>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === "fundo") wrapSelection(titleRef, s.title, "title", "__", "__", update);
+                      else if (e.target.value === "cor") wrapSelection(titleRef, s.title, "title", "**", "**", update);
+                      e.target.value = "";
+                    }}
+                    defaultValue=""
+                    className="h-7 w-10 shrink-0 rounded bg-white/10 text-[10px] text-white cursor-pointer"
+                  >
+                    <option value="" disabled>✦</option>
+                    <option value="fundo">Ab</option>
+                    <option value="cor">Ac</option>
+                  </select>
                 </div>
               </Field>
 
@@ -1168,22 +1169,23 @@ function Index() {
                     rows={2}
                     className={inputCls}
                   />
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button
-                      onClick={() => wrapSelection(subtitleRef, s.subtitle, "subtitle", "__", "__", update)}
-                      className="h-7 w-7 rounded bg-yellow-400 text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Marcar fundo"
-                    >Ab</button>
-                    <button
-                      onClick={() => wrapSelection(subtitleRef, s.subtitle, "subtitle", "**", "**", update)}
-                      className="h-7 w-7 rounded bg-white text-[10px] font-bold text-black flex items-center justify-center"
-                      title="Marcar cor"
-                    >Ac</button>
-                  </div>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === "fundo") wrapSelection(subtitleRef, s.subtitle, "subtitle", "__", "__", update);
+                      else if (e.target.value === "cor") wrapSelection(subtitleRef, s.subtitle, "subtitle", "**", "**", update);
+                      e.target.value = "";
+                    }}
+                    defaultValue=""
+                    className="h-7 w-10 shrink-0 rounded bg-white/10 text-[10px] text-white cursor-pointer"
+                  >
+                    <option value="" disabled>✦</option>
+                    <option value="fundo">Ab</option>
+                    <option value="cor">Ac</option>
+                  </select>
                 </div>
               </Field>
 
-              <Field label="Cores do texto · marque com **cor** ou __fundo__">
+              <Field label="Cores do texto">
                 <div className="grid grid-cols-5 gap-2">
                   {([
                     { k: "kickerColor", l: "Kicker", d: GOLD },

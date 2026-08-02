@@ -231,54 +231,6 @@ function Index() {
   }, [brand, brandReady]);
 
 
-  const refreshLibrary = async () => setLibrary(await loadLibrary());
-
-  const handleSaveCarousel = async () => {
-    const name =
-      currentName.trim() ||
-      slides[0]?.title?.split("\n")[0]?.slice(0, 60) ||
-      "Carrossel sem nome";
-    const id = currentId ?? newId();
-    const now = Date.now();
-    const item: SavedCarousel = {
-      id,
-      name,
-      createdAt: now,
-      updatedAt: now,
-      slides,
-    };
-    try {
-      const next = await upsertCarousel(item);
-      setLibrary(next);
-      setCurrentId(id);
-      setCurrentName(name);
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 1500);
-    } catch (e) {
-      console.error("handleSaveCarousel", e);
-      setError("Erro ao salvar. Verifique sua conexão.");
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-
-  const handleLoadCarousel = (item: SavedCarousel) => {
-    const data = (item.slides as Partial<Slide>[]).map((d) => migrateSlide(d));
-    setSlides(data);
-    setCurrentId(item.id);
-    setCurrentName(item.name);
-    setActive(0);
-    setView("editor");
-    setShowLibrary(false);
-  };
-
-  const handleDeleteCarousel = async (id: string) => {
-    const next = await deleteCarousel(id);
-    setLibrary(next);
-    if (currentId === id) {
-      setCurrentId(null);
-      setCurrentName("");
-    }
-  };
 
   useEffect(() => {
     if (view === "editor") localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));

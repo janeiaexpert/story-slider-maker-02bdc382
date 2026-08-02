@@ -374,7 +374,6 @@ function Index() {
     try {
       return await toPng(el, {
         pixelRatio: 2,
-        useCORS: true,
         cacheBust: true,
       });
     } catch (e) {
@@ -383,7 +382,6 @@ function Index() {
     const { toCanvas } = await import("html-to-image");
     const canvas = await toCanvas(el, {
       pixelRatio: 2,
-      useCORS: true,
       cacheBust: true,
     });
     return canvas.toDataURL("image/png");

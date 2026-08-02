@@ -186,6 +186,7 @@ function Index() {
   const [typography, setTypography] = useState("Médio");
   const [colorTheme, setColorTheme] = useState("Bege");
   const [textSizeScale, setTextSizeScale] = useState(100);
+  const [slideTheme, setSlideTheme] = useState<"dark" | "light" | "alegre">("dark");
   const [generatingImage, setGeneratingImage] = useState(false);
 
   const [exportImages, setExportImages] = useState<string[] | null>(null);
@@ -475,7 +476,13 @@ function Index() {
 
   const s = slides[active];
   const GOLD = brand.primaryColor;
-  const BG = brand.bgColor;
+  const slideThemeColors = {
+    dark: { bg: "#0a0a0a", text: "#ffffff" },
+    light: { bg: "#f5f1ea", text: "#1a1a1a" },
+    alegre: { bg: "#1a1040", text: "#ffffff" },
+  };
+  const BG = slideThemeColors[slideTheme].bg;
+  const textColor = slideThemeColors[slideTheme].text;
 
   const activeTypography = TYPOGRAPHY_PRESETS.find(t => t.name === typography) ?? TYPOGRAPHY_PRESETS[5];
   const activeColorTheme = COLOR_THEMES.find(c => c.name === colorTheme);
@@ -711,7 +718,7 @@ function Index() {
                   <div
                     ref={slideRef}
                     className={`absolute inset-0 flex flex-col ${editorOpen ? "card-preview-compact-mobile" : ""}`}
-                    style={{ background: BG, color: "white" }}
+                    style={{ background: BG, color: textColor }}
                   >
                     {(() => {
                       const layout = s.layout ?? "overlay";
@@ -780,7 +787,7 @@ function Index() {
                                 style={{
                                   fontFamily: activeTypography.fontFamily,
                                   fontWeight: activeTypography.headingWeight,
-                                  color: s.titleColor ?? "#ffffff",
+                                  color: s.titleColor ?? textColor,
                                   letterSpacing: s.titleSpacing != null ? `${s.titleSpacing}px` : activeTypography.headingSpacing,
                                   textTransform: activeTypography.headingTransform as "none" | "uppercase",
                                   wordSpacing: "normal",
@@ -796,7 +803,7 @@ function Index() {
                                 <p
                                   className="mt-3"
                                   style={{
-                                    color: s.subtitleColor ?? "rgba(255,255,255,0.8)",
+                                    color: s.subtitleColor ?? (slideTheme === "light" ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.8)"),
                                     fontSize: (split ? 11 : 13) * subScale * effectiveTextScale,
                                     fontFamily: bodyFont,
                                     fontWeight: activeTypography.bodyWeight,
@@ -856,7 +863,7 @@ function Index() {
                           {/* Footer fixo */}
                           <div className="absolute right-0 bottom-0 left-0 z-10 px-7 pb-5">
                             <div
-                              className="flex items-center justify-between text-[11px] text-white/70"
+                              className={`flex items-center justify-between text-[11px] ${slideTheme === "light" ? "text-black/50" : "text-white/70"}`}
                               style={{ fontFamily: bodyFont }}
                             >
                               <span>
@@ -1016,6 +1023,30 @@ function Index() {
                     >
                       ✕ Limpar
                     </button>
+                  </div>
+                </Field>
+
+                <Field label="Tema do slide">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        { v: "dark" as const, l: "Escuro" },
+                        { v: "light" as const, l: "Claro" },
+                        { v: "alegre" as const, l: "Alegre" },
+                      ]
+                    ).map((opt) => (
+                      <button
+                        key={opt.v}
+                        onClick={() => setSlideTheme(opt.v)}
+                        className={`rounded-md py-2 text-[11px] font-semibold ${
+                          slideTheme === opt.v
+                            ? "bg-white text-black"
+                            : "bg-white/5 text-white/70"
+                        }`}
+                      >
+                        {opt.l}
+                      </button>
+                    ))}
                   </div>
                 </Field>
 

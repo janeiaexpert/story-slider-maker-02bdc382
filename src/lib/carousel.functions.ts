@@ -106,10 +106,12 @@ export const generateCarousel = createServerFn({ method: "POST" })
 REGRAS DE OURO (filtro anti-cara-de-IA):
 - Linguagem natural e humana. Sem clichês motivacionais.
 - Nada de: "imagine se", "descubra agora", "transforme sua vida", "o segredo que ninguém te conta", "você sabia que".
+- PROIBIDO repetir estruturas entre slides. Cada slide DEVE ter uma frase única e diferente. NUNCA repetir padrões como "você vai aprender", "você aprenderá", "vamos falar sobre", "vou te mostrar" em mais de um slide. Se o modelo detectar que está repetindo uma estrutura, REESCREVA completamente.
 - Sem emojis em excesso. No máximo 1 emoji em todo o carrossel, e só se fizer real diferença.
 - Sem reticências dramáticas. Sem CAPS LOCK no corpo.
 - Frases curtas, ritmo de leitura humano. Variação estrutural entre slides.
 - Português brasileiro, tom condizente com o briefing da marca.
+- Cada slide DEVE abordar um ângulo DIFERENTE do tema. Nunca repetir a mesma ideia com palavras diferentes.
 
 ESTRUTURA OBRIGATÓRIA (8 slides, nesta ordem):
 1. CAPA — gancho de retenção máxima. Provoca curiosidade ou contradiz crença comum. Sem botão.
@@ -140,7 +142,9 @@ RETORNE APENAS JSON VÁLIDO no formato:
     ... 8 itens no total
   ]
 }
-Nada de texto fora do JSON.`;
+Nada de texto fora do JSON.
+
+IMPORTANTE: O conteúdo DEVE parecer escrito por um humano, não por uma IA. Varie completamente a estrutura das frases entre slides. Nunca use o mesmo padrão sintático duas vezes.`;
 
     const userPrompt = `BRIEFING DA MARCA:
 - Nicho: ${data.brand.niche || "não definido"}

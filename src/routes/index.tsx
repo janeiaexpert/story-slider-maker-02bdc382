@@ -1154,16 +1154,16 @@ function Index() {
               </Field>
 
               <Field label="Gradiente (direção)">
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                   {(["top", "bottom", "left", "right"] as const).map((g) => {
                     const Icon =
                       g === "top" ? ArrowUp : g === "bottom" ? ArrowDown : g === "left" ? ArrowLeft : ArrowRight;
-                    const labels: Record<string, string> = { top: "Cima", bottom: "Baixo", left: "Esq.", right: "Dir." };
+                    const labels: Record<string, string> = { top: "Cima", bottom: "Baixo", left: "Esquerda", right: "Direita" };
                     return (
                       <button
                         key={g}
                         onClick={() => update({ gradient: g })}
-                        className={`inline-flex items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-semibold ${
+                        className={`inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold ${
                           s.gradient === g ? "bg-white text-black" : "bg-white/5 text-white/70"
                         }`}
                       >
@@ -1230,17 +1230,16 @@ function Index() {
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
                       {(["top", "center", "bottom"] as const).map((p) => {
-                        const Icon = p === "top" ? ArrowUp : p === "bottom" ? ArrowDown : Circle;
-                        const label = p === "top" ? "topo" : p === "bottom" ? "base" : "centro";
+                        const label = p === "top" ? "Topo" : p === "bottom" ? "Base" : "Centro";
                         return (
                           <button
                             key={p}
                             onClick={() => update({ imagePos: p })}
-                            className={`inline-flex items-center justify-center gap-1 rounded-md px-1 py-2 text-[11px] font-semibold ${
+                            className={`rounded-md px-1 py-2 text-[11px] font-semibold ${
                               s.imagePos === p ? "bg-white text-black" : "bg-white/5 text-white/70"
                             }`}
                           >
-                            <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
+                            {label}
                           </button>
                         );
                       })}
@@ -1309,7 +1308,7 @@ function Index() {
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
-                      { v: "overlay", l: "Sobrepor" },
+                      { v: "overlay", l: "Sobrep." },
                       { v: "image-left", l: "Esq." },
                       { v: "image-right", l: "Dir." },
                     ] as const

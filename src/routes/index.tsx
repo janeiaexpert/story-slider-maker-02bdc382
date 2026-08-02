@@ -76,6 +76,7 @@ type Slide = {
   subtitleColor?: string;
   kickerColor?: string;
   highlightColor?: string;
+  highlightBgColor?: string;
   titleScale?: number; // 0.7 - 1.6
   subtitleScale?: number;
   titleSpacing?: number; // -5 - 10 (px)
@@ -103,6 +104,7 @@ function migrateSlide(d: Partial<Slide>): Slide {
     subtitleColor: d.subtitleColor,
     kickerColor: d.kickerColor,
     highlightColor: d.highlightColor,
+    highlightBgColor: d.highlightBgColor,
     titleScale: d.titleScale ?? 1,
     subtitleScale: d.subtitleScale ?? 1,
     titleSpacing: d.titleSpacing,
@@ -113,14 +115,22 @@ function migrateSlide(d: Partial<Slide>): Slide {
 }
 
 // Renderiza texto com **palavra** destacada em cor de marcador.
-function renderRich(text: string, highlight: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+function renderRich(text: string, highlight: string, highlightBg?: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__)/g);
   return parts.map((p, i) => {
-    const m = p.match(/^\*\*([^*]+)\*\*$/);
-    if (m) {
+    const mColor = p.match(/^\*\*([^*]+)\*\*$/);
+    if (mColor) {
       return (
         <span key={i} style={{ color: highlight, fontWeight: 700 }}>
-          {m[1]}
+          {mColor[1]}
+        </span>
+      );
+    }
+    const mBg = p.match(/^__([^_]+)__$/);
+    if (mBg) {
+      return (
+        <span key={i} style={{ background: highlightBg || highlight, color: "#000", padding: "0 4px", borderRadius: "3px", fontWeight: 600 }}>
+          {mBg[1]}
         </span>
       );
     }
@@ -797,7 +807,7 @@ function Index() {
                                   lineHeight: activeTypography.headingLineHeight,
                                 }}
                               >
-                                {renderRich(s.title, s.highlightColor ?? effectiveGold)}
+                                {renderRich(s.title, s.highlightColor ?? effectiveGold, s.highlightBgColor)}
                               </h2>
                               {s.subtitle && (
                                 <p
@@ -811,7 +821,7 @@ function Index() {
                                     lineHeight: "1.4",
                                   }}
                                 >
-                                  {renderRich(s.subtitle, s.highlightColor ?? effectiveGold)}
+                                  {renderRich(s.subtitle, s.highlightColor ?? effectiveGold, s.highlightBgColor)}
                                 </p>
                               )}
                               {s.buttonText && s.buttonPosition === "inline" && (
@@ -1088,13 +1098,14 @@ function Index() {
                 />
               </Field>
 
-              <Field label="Cores do texto · marque palavras com **palavra**">
-                <div className="grid grid-cols-4 gap-2">
+              <Field label="Cores do texto · marque com **cor** ou __fundo__">
+                <div className="grid grid-cols-5 gap-2">
                   {([
                     { k: "kickerColor", l: "Kicker", d: GOLD },
                     { k: "titleColor", l: "Título", d: "#ffffff" },
                     { k: "subtitleColor", l: "Subtítulo", d: "#cccccc" },
-                    { k: "highlightColor", l: "Marcador", d: GOLD },
+                    { k: "highlightColor", l: "Cor", d: GOLD },
+                    { k: "highlightBgColor", l: "Fundo", d: "#ffdd00" },
                   ] as const).map((c) => (
                     <label key={c.k} className="flex flex-col items-center gap-1">
                       <input

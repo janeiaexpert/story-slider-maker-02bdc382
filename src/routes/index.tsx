@@ -508,7 +508,7 @@ function Index() {
             <button
               onClick={() => setCompact((c) => !c)}
               title={compact ? "Modo normal" : "Modo compacto"}
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10"
             >
               {compact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
             </button>
@@ -516,7 +516,7 @@ function Index() {
               <button
                 onClick={() => setShowCaption(true)}
                 title="Gerar legenda para Instagram"
-                className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10"
               >
                 <MessageSquareText className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Legenda</span>
@@ -524,14 +524,14 @@ function Index() {
             )}
             <button
               onClick={() => setShowStyles(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10"
             >
               <Palette className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Estilos</span>
             </button>
             <button
               onClick={() => setShowBrand(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10"
             >
               <Settings2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Marca</span>
@@ -549,7 +549,7 @@ function Index() {
                     }
                   }}
                   disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Novo</span>
@@ -564,16 +564,16 @@ function Index() {
                     });
                   }}
                   disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
                   title=            "Copiar link e sincronizar com outro dispositivo"
                 >
                   <Share2 className="h-3.5 w-3.5" />
-                  <span>{shareFlash ? "Copiado!" : "Sincronizar"}</span>
+                  <span className="hidden sm:inline">{shareFlash ? "Copiado!" : "Sincronizar"}</span>
                 </button>
                 <button
                   onClick={exportAll}
                   disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white/5 px-3 py-2.5 text-xs font-semibold hover:bg-white/10 disabled:opacity-40"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">PNGs</span>
@@ -581,7 +581,7 @@ function Index() {
                 <button
                   onClick={exportPdf}
                   disabled={exporting}
-                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold disabled:opacity-60 sm:px-4 sm:text-sm"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2.5 text-xs font-semibold disabled:opacity-60 sm:px-4 sm:text-sm"
                   style={{ background: GOLD, color: "#111" }}
                 >
                   <FileDown className="h-4 w-4" />

@@ -39,6 +39,8 @@ import {
 import {
   saveBrandToCloud,
   loadBrandFromCloud,
+  upsertCarousel,
+  newId,
 } from "@/lib/carousel-library";
 import { Minimize2, Maximize2, MessageSquareText, Share2, Undo2, Redo2 } from "lucide-react";
 import { getSpaceId, shareUrl } from "@/lib/space-id";
@@ -196,6 +198,7 @@ function Index() {
   const [active, setActive] = useState(0);
   const [saved, setSaved] = useState<number | null>(null);
   const [currentName, setCurrentName] = useState<string>("");
+  const [carouselId, setCarouselId] = useState<string>(() => localStorage.getItem("carousel-id-v1") || "");
   const [shareFlash, setShareFlash] = useState(false);
   const [compact, setCompact] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -300,6 +303,30 @@ function Index() {
   useEffect(() => {
     if (view === "editor") localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
   }, [slides, view]);
+
+  useEffect(() => {
+    if (view !== "editor" || !brandReady) return;
+    const timer = setTimeout(async () => {
+      try {
+        let id = carouselId;
+        if (!id) {
+          id = newId();
+          setCarouselId(id);
+          localStorage.setItem("carousel-id-v1", id);
+        }
+        await upsertCarousel({
+          id,
+          name: currentName || "Carrossel",
+          slides,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      } catch (e) {
+        console.error("auto-save failed", e);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [slides, view, brandReady]);
 
   const update = (patch: Partial<Slide>) => {
     const next = slides.map((sl, i) => (i === active ? { ...sl, ...patch } : sl));
